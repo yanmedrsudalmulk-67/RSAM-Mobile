@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { supabase } from './server/supabase.ts';
+import { supabase } from './server/supabase';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
@@ -84,19 +84,18 @@ async function deleteFromSupabaseStorage(fileUrl: string) {
 const app = express();
 export default app;
 
-async function startServer() {
-  const PORT = 3000;
+const PORT = 3000;
 
-  app.use(express.json({ limit: '10mb' }));
-  
-  // Request logging middleware
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
-  });
+app.use(express.json({ limit: '10mb' }));
 
-  // API Routes - Define these BEFORE any other middleware
-  app.get('/api/logos', async (req, res) => {
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
+// API Routes - Define these BEFORE any other middleware
+app.get('/api/logos', async (req, res) => {
     console.log('GET /api/logos hit with query:', req.query);
     try {
       const { status } = req.query;
@@ -170,7 +169,7 @@ async function startServer() {
       if (error) {
         if (error.message.includes('Could not find the table')) {
           // Fallback to constants if table is missing
-          const { DOCTORS } = await import('./src/constants.ts');
+          const { DOCTORS } = await import('./src/constants');
           return res.json(DOCTORS.map(d => ({
             id_dokter: d.id,
             nama_dokter: d.name,
@@ -2241,7 +2240,8 @@ async function startServer() {
     res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
   });
 
-  // Vite middleware for development
+// Vite middleware for development
+async function setupVite() {
   if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -2260,8 +2260,10 @@ async function startServer() {
       });
     }
   }
+}
 
-  if (!process.env.VERCEL) {
+if (!process.env.VERCEL) {
+  setupVite().then(() => {
     app.listen(PORT, '0.0.0.0', async () => {
       console.log(`Server running on http://localhost:${PORT}`);
       
@@ -2284,11 +2286,7 @@ async function startServer() {
         console.error('Failed to connect to Supabase storage:', err);
       }
     });
-  }
-}
-
-if (!process.env.VERCEL) {
-  startServer().catch(err => {
+  }).catch(err => {
     console.error('Failed to start server:', err);
     process.exit(1);
   });
