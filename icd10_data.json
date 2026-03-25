@@ -1,0 +1,17 @@
+[
+  { "code": "J00", "name": "Acute nasopharyngitis [common cold]", "description": "Common cold" },
+  { "code": "J01", "name": "Acute sinusitis", "description": "Acute sinusitis" },
+  { "code": "J02", "name": "Acute pharyngitis", "description": "Acute pharyngitis" },
+  { "code": "J03", "name": "Acute tonsillitis", "description": "Acute tonsillitis" },
+  { "code": "J04", "name": "Acute laryngitis and tracheitis", "description": "Acute laryngitis and tracheitis" },
+  { "code": "A09", "name": "Infectious gastroenteritis and colitis", "description": "Infectious gastroenteritis and colitis" },
+  { "code": "E11", "name": "Type 2 diabetes mellitus", "description": "Type 2 diabetes mellitus" },
+  { "code": "I10", "name": "Essential (primary) hypertension", "description": "Essential (primary) hypertension" },
+  { "code": "K21", "name": "Gastro-esophageal reflux disease", "description": "Gastro-esophageal reflux disease" },
+  { "code": "R50", "name": "Fever of other and unknown origin", "description": "Fever of other and unknown origin" },
+  { "code": "R51", "name": "Headache", "description": "Headache" },
+  { "code": "R05", "name": "Cough", "description": "Cough" },
+  { "code": "K30", "name": "Functional dyspepsia", "description": "Functional dyspepsia" },
+  { "code": "A91", "name": "Dengue haemorrhagic fever", "description": "Dengue haemorrhagic fever" },
+  { "code": "A01", "name": "Typhoid and paratyphoid fevers", "description": "Typhoid and paratyphoid fevers" }
+]
