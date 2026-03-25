@@ -81,8 +81,10 @@ async function deleteFromSupabaseStorage(fileUrl: string) {
   }
 }
 
+const app = express();
+export default app;
+
 async function startServer() {
-  const app = express();
   const PORT = 3000;
 
   app.use(express.json({ limit: '10mb' }));
@@ -2240,41 +2242,54 @@ async function startServer() {
   });
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static('dist'));
+    // Serve static files from dist in production/Vercel
+    const distPath = path.join(process.cwd(), 'dist');
+    if (fs.existsSync(distPath)) {
+      app.use(express.static(distPath));
+      // Handle SPA routing
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api')) return next();
+        res.sendFile(path.join(distPath, 'index.html'));
+      });
+    }
   }
 
-  app.listen(PORT, '0.0.0.0', async () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    
-    // Check if Supabase bucket exists
-    try {
-      const { data: buckets, error } = await supabase.storage.listBuckets();
-      if (error) {
-        console.error('Error checking Supabase buckets:', error.message);
-      } else {
-        const bucketExists = buckets.some(b => b.name === 'uploads');
-        if (!bucketExists) {
-          console.error('\x1b[31m%s\x1b[0m', 'CRITICAL ERROR: Supabase bucket "uploads" not found!');
-          console.error('\x1b[33m%s\x1b[0m', 'Please create a PUBLIC bucket named "uploads" in your Supabase project to enable file uploads.');
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', async () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      
+      // Check if Supabase bucket exists
+      try {
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        if (error) {
+          console.error('Error checking Supabase buckets:', error.message);
         } else {
-          console.log('Supabase bucket "uploads" verified.');
-          console.log('\x1b[36m%s\x1b[0m', 'REMINDER: Ensure you have set the correct RLS Policies for the "uploads" bucket to allow uploads.');
+          const bucketExists = buckets.some(b => b.name === 'uploads');
+          if (!bucketExists) {
+            console.error('\x1b[31m%s\x1b[0m', 'CRITICAL ERROR: Supabase bucket "uploads" not found!');
+            console.error('\x1b[33m%s\x1b[0m', 'Please create a PUBLIC bucket named "uploads" in your Supabase project to enable file uploads.');
+          } else {
+            console.log('Supabase bucket "uploads" verified.');
+            console.log('\x1b[36m%s\x1b[0m', 'REMINDER: Ensure you have set the correct RLS Policies for the "uploads" bucket to allow uploads.');
+          }
         }
+      } catch (err) {
+        console.error('Failed to connect to Supabase storage:', err);
       }
-    } catch (err) {
-      console.error('Failed to connect to Supabase storage:', err);
-    }
-  });
+    });
+  }
 }
 
-startServer().catch(err => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+if (!process.env.VERCEL) {
+  startServer().catch(err => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
