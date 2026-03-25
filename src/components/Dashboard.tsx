@@ -2764,14 +2764,24 @@ function RekamMedisView() {
   }, []);
 
   const loadIcd10Options = async (inputValue: string) => {
+    if (!inputValue) return [];
     try {
       const response = await fetch(`/api/icd10?search=${encodeURIComponent(inputValue)}&limit=20`);
       const data = await response.json();
-      return data.map((item: any) => ({
+      
+      const options = data.map((item: any) => ({
         value: item.code,
         label: `${item.code} - ${item.name}`,
         id: item.id
       }));
+      
+      // Check if exact match exists (case insensitive)
+      const exactMatch = data.find((item: any) => 
+        item.name.toLowerCase() === inputValue.toLowerCase() || 
+        item.code.toLowerCase() === inputValue.toLowerCase()
+      );
+      
+      return options;
     } catch (error) {
       console.error('Error fetching ICD-10 options:', error);
       return [];
@@ -2779,9 +2789,11 @@ function RekamMedisView() {
   };
 
   const loadObatOptions = async (inputValue: string) => {
+    if (!inputValue) return [];
     try {
       const response = await fetch(`/api/obat?search=${encodeURIComponent(inputValue)}&limit=15`);
       const data = await response.json();
+      
       return data.map((item: any) => ({
         value: item.id,
         label: `${item.nama_obat} (${item.kategori}) - Stok: ${item.stok}`,
@@ -2812,26 +2824,50 @@ function RekamMedisView() {
   const handleUpdateResep = (index: number, field: string, value: any) => {
     const newResep = [...medicalRecordForm.resep];
     if (field === 'obat') {
-      if (value.__isNew__) {
-        newResep[index].obat_id = 'custom';
-        newResep[index].nama_obat = value.label;
-        newResep[index].satuan = 'pcs';
-        newResep[index].stok = 100; // Default stock for custom
-        newResep[index].dosis = '1 Tablet';
+      if (!value) {
+        newResep[index].obat_id = '';
+        newResep[index].nama_obat = '';
+        newResep[index].satuan = '';
+        newResep[index].stok = 0;
+        newResep[index].dosis = '';
       } else {
-        newResep[index].obat_id = value.value;
-        newResep[index].nama_obat = value.obat.nama_obat;
-        newResep[index].satuan = value.obat.satuan;
-        newResep[index].stok = value.obat.stok;
-        
-        // Auto-fill dosis based on category
-        if (value.obat.kategori === 'Sirup') {
-          newResep[index].dosis = '1 Sendok Takar (5ml)';
-        } else if (value.obat.kategori === 'Salep' || value.obat.kategori === 'Krim') {
-          newResep[index].dosis = 'Oleskan tipis';
-          newResep[index].cara_pakai = 'Dioleskan pada area sakit';
-        } else {
+        // Check for duplicates
+        const isDuplicate = newResep.some((r, i) => i !== index && r.obat_id === value.value && value.value !== 'custom');
+        if (isDuplicate) {
+          alert('Obat ini sudah ada dalam resep.');
+          return;
+        }
+
+        if (value.__isNew__ || value.value === 'custom') {
+          const normalizedName = value.label.trim().replace(/\s+/g, ' ').split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+          
+          // Check for duplicate custom names
+          const isDuplicateCustom = newResep.some((r, i) => i !== index && r.nama_obat.toLowerCase() === normalizedName.toLowerCase());
+          if (isDuplicateCustom) {
+            alert('Obat ini sudah ada dalam resep.');
+            return;
+          }
+
+          newResep[index].obat_id = 'custom';
+          newResep[index].nama_obat = normalizedName;
+          newResep[index].satuan = 'pcs';
+          newResep[index].stok = 100; // Default stock for custom
           newResep[index].dosis = '1 Tablet';
+        } else {
+          newResep[index].obat_id = value.value;
+          newResep[index].nama_obat = value.obat.nama_obat;
+          newResep[index].satuan = value.obat.satuan;
+          newResep[index].stok = value.obat.stok;
+          
+          // Auto-fill dosis based on category
+          if (value.obat.kategori === 'Sirup') {
+            newResep[index].dosis = '1 Sendok Takar (5ml)';
+          } else if (value.obat.kategori === 'Salep' || value.obat.kategori === 'Krim') {
+            newResep[index].dosis = 'Oleskan tipis';
+            newResep[index].cara_pakai = 'Dioleskan pada area sakit';
+          } else {
+            newResep[index].dosis = '1 Tablet';
+          }
         }
       }
     } else {
@@ -2845,6 +2881,47 @@ function RekamMedisView() {
     setSaveStatus({ type: null, message: '' });
     try {
       const record = await getMedicalRecordDB(item.id_booking);
+      
+      let parsedDiagnosa = [];
+      if (record.diagnosa) {
+        if (Array.isArray(record.diagnosa)) {
+          parsedDiagnosa = record.diagnosa.map((d: any) => {
+            if (typeof d === 'string') return { value: 'Custom', label: d, id: 'custom' };
+            return { value: d.code, label: d.code === 'Custom' ? d.name : `${d.code} - ${d.name}`, id: d.id };
+          });
+        } else if (typeof record.diagnosa === 'string') {
+          try {
+            const parsed = JSON.parse(record.diagnosa);
+            if (Array.isArray(parsed)) {
+              parsedDiagnosa = parsed.map((d: any) => {
+                if (typeof d === 'string') return { value: 'Custom', label: d, id: 'custom' };
+                return { value: d.code, label: d.code === 'Custom' ? d.name : `${d.code} - ${d.name}`, id: d.id };
+              });
+            } else {
+              parsedDiagnosa = [{ value: 'Custom', label: record.diagnosa, id: 'custom' }];
+            }
+          } catch (e) {
+            parsedDiagnosa = [{ value: 'Custom', label: record.diagnosa, id: 'custom' }];
+          }
+        }
+      }
+
+      let parsedResep = [];
+      if (record.resep) {
+        if (Array.isArray(record.resep)) {
+          parsedResep = record.resep;
+        } else if (typeof record.resep === 'string') {
+          try {
+            const parsed = JSON.parse(record.resep);
+            if (Array.isArray(parsed)) {
+              parsedResep = parsed;
+            }
+          } catch (e) {
+            parsedResep = [];
+          }
+        }
+      }
+
       setMedicalRecordForm({
         no_rm: record.no_rm || '',
         keluhan: record.keluhan || '',
@@ -2854,13 +2931,9 @@ function RekamMedisView() {
         respirasi: record.respirasi || '',
         suhu: record.suhu || '',
         saturasi: record.saturasi || '',
-        diagnosa: record.diagnosa ? 
-          (Array.isArray(record.diagnosa) ? 
-            record.diagnosa.map((d: any) => ({ value: d.code, label: d.code === 'Custom' ? d.name : `${d.code} - ${d.name}`, id: d.id })) : 
-            [{ value: 'Custom', label: record.diagnosa, id: 'custom' }]) 
-          : [],
+        diagnosa: parsedDiagnosa,
         tindakan: record.tindakan || 'Rawat Jalan',
-        resep: record.resep || []
+        resep: parsedResep
       });
     } catch (error) {
       console.error('Error fetching medical record:', error);
@@ -2922,11 +2995,16 @@ function RekamMedisView() {
       const finalData = {
         ...medicalRecordForm,
         id_pasien: selectedPatient.user_id || selectedPatient.nik,
-        diagnosa: medicalRecordForm.diagnosa.map((d: any) => ({
-          id: d.id,
-          code: d.value,
-          name: d.label.split(' - ')[1] || d.label
-        })),
+        diagnosa: medicalRecordForm.diagnosa.map((d: any) => {
+          const isNew = d.__isNew__ || d.id === 'custom' || !d.id;
+          const rawName = isNew ? d.label : (d.label.includes(' - ') ? d.label.substring(d.label.indexOf(' - ') + 3) : d.label);
+          const normalizedName = rawName.trim().replace(/\s+/g, ' ').split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+          return {
+            id: isNew ? 'custom' : d.id,
+            code: isNew ? 'Custom' : d.value,
+            name: normalizedName
+          };
+        }),
         // Ensure numeric fields are numbers or empty strings
         nadi: medicalRecordForm.nadi || null,
         respirasi: medicalRecordForm.respirasi || null,
@@ -3280,14 +3358,14 @@ function RekamMedisView() {
                         <CheckCircle className="mr-2 text-emerald-500" size={16} />
                         Diagnosa (ICD-10)
                       </label>
-                      <AsyncCreatableSelect 
+                        <AsyncCreatableSelect 
                         isMulti
                         cacheOptions
                         defaultOptions
                         loadOptions={loadIcd10Options}
                         placeholder="Cari diagnosa (kode atau nama) atau ketik baru..."
-                        noOptionsMessage={() => "Diagnosa tidak ditemukan"}
-                        formatCreateLabel={(inputValue) => `Tambah diagnosa: "${inputValue}"`}
+                        noOptionsMessage={() => "Ketik untuk mencari atau menambahkan diagnosa baru"}
+                        formatCreateLabel={(inputValue) => `Tambah diagnosa baru: "${inputValue}"`}
                         className="text-sm"
                         value={medicalRecordForm.diagnosa}
                         onChange={(val) => setMedicalRecordForm({...medicalRecordForm, diagnosa: val as any})}
@@ -3358,8 +3436,8 @@ function RekamMedisView() {
                                   defaultOptions
                                   loadOptions={loadObatOptions}
                                   placeholder="Cari obat atau ketik baru..."
-                                  noOptionsMessage={() => "Obat tidak ditemukan"}
-                                  formatCreateLabel={(inputValue) => `Tambah obat: "${inputValue}"`}
+                                  noOptionsMessage={() => "Ketik untuk mencari atau menambahkan obat baru"}
+                                  formatCreateLabel={(inputValue) => `Tambah obat baru: "${inputValue}"`}
                                   className="text-sm"
                                   value={r.obat_id ? { value: r.obat_id, label: r.nama_obat } : null}
                                   onChange={(val) => handleUpdateResep(index, 'obat', val)}

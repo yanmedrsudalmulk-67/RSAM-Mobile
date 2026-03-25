@@ -10,7 +10,7 @@
   { "code": "K21", "name": "Gastro-esophageal reflux disease", "description": "Gastro-esophageal reflux disease" },
   { "code": "R50", "name": "Fever of other and unknown origin", "description": "Fever of other and unknown origin" },
   { "code": "R51", "name": "Headache", "description": "Headache" },
-  { "code": "R05", "name": "Cough", "description": "Cough" },
+  { "code": "K02", "name": "Dental Caries", "description": "CDental Caries" },
   { "code": "K30", "name": "Functional dyspepsia", "description": "Functional dyspepsia" },
   { "code": "A91", "name": "Dengue haemorrhagic fever", "description": "Dengue haemorrhagic fever" },
   { "code": "A01", "name": "Typhoid and paratyphoid fevers", "description": "Typhoid and paratyphoid fevers" }

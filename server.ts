@@ -854,6 +854,10 @@ async function startServer() {
         throw error;
       }
 
+      // Initialize arrays to hold inserted data for the response
+      let diagnosaToInsert: any[] = [];
+      let resepToInsert: any[] = [];
+
       // Handle ICD-10 relational table if data.diagnosa is an array of objects
       if (rmData && rmData.id && Array.isArray(data.diagnosa)) {
         try {
@@ -863,31 +867,48 @@ async function startServer() {
             .delete()
             .eq('rekam_medis_id', rmData.id);
 
-          const diagnosaToInsert = [];
           for (const d of data.diagnosa) {
             let icd10_id = d.id;
             
             // If it's a custom diagnosis, insert it into icd10_codes first
             if (d.id === 'custom' || !d.id) {
-              const customCode = `CUST-${Math.floor(Math.random() * 1000000)}`;
-              const { data: newDiag, error: newDiagError } = await supabase
+              const rawName = (d.name || d.code || 'Custom Diagnosis').trim().replace(/\s+/g, ' ');
+              const diagName = rawName.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+              
+              // Check if exists
+              const { data: existingDiag } = await supabase
                 .from('icd10_codes')
-                .insert({
-                  code: customCode,
-                  name: d.name || d.code || 'Custom Diagnosis',
-                  description: 'Manual input'
-                })
-                .select('id')
-                .single();
-                
-              if (!newDiagError && newDiag) {
-                icd10_id = newDiag.id;
-                // Update the original data array so it gets saved correctly in the JSON fallback
-                d.id = newDiag.id;
-                d.code = customCode;
+                .select('id, code, name')
+                .ilike('name', diagName)
+                .limit(1)
+                .maybeSingle();
+
+              if (existingDiag) {
+                icd10_id = existingDiag.id;
+                d.id = existingDiag.id;
+                d.code = existingDiag.code;
+                d.name = existingDiag.name;
               } else {
-                console.warn('Failed to create custom diagnosis:', newDiagError);
-                continue; // Skip this one if we couldn't create it
+                const customCode = `CUST-${Math.floor(Math.random() * 1000000)}`;
+                const { data: newDiag, error: newDiagError } = await supabase
+                  .from('icd10_codes')
+                  .insert({
+                    code: customCode,
+                    name: diagName,
+                    description: 'Manual input'
+                  })
+                  .select('id, code, name')
+                  .single();
+                  
+                if (!newDiagError && newDiag) {
+                  icd10_id = newDiag.id;
+                  d.id = newDiag.id;
+                  d.code = newDiag.code;
+                  d.name = newDiag.name;
+                } else {
+                  console.warn('Failed to create custom diagnosis:', newDiagError);
+                  continue; // Skip this one if we couldn't create it
+                }
               }
             }
             
@@ -929,29 +950,46 @@ async function startServer() {
             .delete()
             .eq('rekam_medis_id', rmData.id);
 
-          const resepToInsert = [];
           for (const r of data.resep) {
             let obat_id = r.obat_id;
             
             // If it's a custom medicine, insert it into obat_master first
             if (!r.obat_id || r.obat_id === 'custom') {
-              const { data: newObat, error: newObatError } = await supabase
+              const rawName = (r.nama_obat || r.obat_id || 'Custom Obat').trim().replace(/\s+/g, ' ');
+              const obatName = rawName.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+              
+              // Check if exists
+              const { data: existingObat } = await supabase
                 .from('obat_master')
-                .insert({
-                  nama_obat: r.nama_obat || r.obat_id || 'Custom Obat',
-                  kategori: 'Lainnya',
-                  satuan: 'pcs',
-                  stok: 100 // Default stock for custom medicine
-                })
-                .select('id')
-                .single();
-                
-              if (!newObatError && newObat) {
-                obat_id = newObat.id;
-                r.obat_id = newObat.id;
+                .select('id, nama_obat')
+                .ilike('nama_obat', obatName)
+                .limit(1)
+                .maybeSingle();
+
+              if (existingObat) {
+                obat_id = existingObat.id;
+                r.obat_id = existingObat.id;
+                r.nama_obat = existingObat.nama_obat;
               } else {
-                console.warn('Failed to create custom medicine:', newObatError);
-                continue; // Skip this one if we couldn't create it
+                const { data: newObat, error: newObatError } = await supabase
+                  .from('obat_master')
+                  .insert({
+                    nama_obat: obatName,
+                    kategori: 'Lainnya',
+                    satuan: 'pcs',
+                    stok: 100 // Default stock for custom medicine
+                  })
+                  .select('id, nama_obat')
+                  .single();
+                  
+                if (!newObatError && newObat) {
+                  obat_id = newObat.id;
+                  r.obat_id = newObat.id;
+                  r.nama_obat = newObat.nama_obat;
+                } else {
+                  console.warn('Failed to create custom medicine:', newObatError);
+                  continue; // Skip this one if we couldn't create it
+                }
               }
             }
             
@@ -997,7 +1035,7 @@ async function startServer() {
           // Update the JSON fallback in rekam_medis with the new IDs
           await supabase
             .from('rekam_medis')
-            .update({ obat: JSON.stringify(data.resep) })
+            .update({ resep: JSON.stringify(data.resep) })
             .eq('id', rmData.id);
             
         } catch (err) {
@@ -1017,7 +1055,7 @@ async function startServer() {
         }
       }
 
-      res.json({ success: true });
+      res.json({ success: true, diagnosa: diagnosaToInsert, resep: resepToInsert });
     } catch (error: any) {
       console.error('Medical record save error:', error);
       res.status(500).json({ error: error.message });
