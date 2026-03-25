@@ -697,6 +697,7 @@ export default function PatientPortal({ user, onLogout }: PatientPortalProps) {
               )}
             </motion.div>
           )}
+
           {activeTab === 'rekam-medis' && (
             <motion.div
               key="rekam-medis"

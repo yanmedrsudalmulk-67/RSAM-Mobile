@@ -232,7 +232,7 @@ export default function Login({ onLogin }: LoginProps) {
                 )}
 
                 <AnimatePresence mode="wait">
-                  {loginMethod === 'email' && (
+                  {loginMethod === 'email' ? (
                     <motion.form 
                       key="email-form"
                       initial={{ opacity: 0, x: -20 }}
@@ -328,9 +328,7 @@ export default function Login({ onLogin }: LoginProps) {
                         </div>
                       )}
                     </motion.form>
-                  )}
-
-                  {loginMethod === 'phone' && (
+                  ) : loginMethod === 'phone' ? (
                     <motion.form 
                       key="phone-form"
                       initial={{ opacity: 0, x: 20 }}
@@ -370,9 +368,7 @@ export default function Login({ onLogin }: LoginProps) {
                         </button>
                       </div>
                     </motion.form>
-                  )}
-
-                  {loginMethod === 'otp' && (
+                  ) : loginMethod === 'otp' ? (
                     <motion.form 
                       key="otp-form"
                       initial={{ opacity: 0, x: 20 }}
@@ -415,7 +411,7 @@ export default function Login({ onLogin }: LoginProps) {
                         </button>
                       </div>
                     </motion.form>
-                  )}
+                  ) : null}
                 </AnimatePresence>
 
                 {activeTab === 'patient' && loginMethod === 'email' && (

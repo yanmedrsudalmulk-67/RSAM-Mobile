@@ -123,7 +123,7 @@ function ServiceSlider({ services, onSelectService }: { services: any[], onSelec
                 pointerEvents: isCenter ? 'auto' : 'none'
               }}
               transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-              className="absolute w-[300px] md:w-[380px] h-[420px] bg-white border border-slate-100 p-8 rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] flex flex-col"
+              className="absolute w-[300px] md:w-[380px] h-[420px] bg-white border p-8 rounded-[20px] shadow-[0_10px_30px_rgba(0,0,0,0.05)] flex flex-col"
               whileHover={isCenter ? { y: -8, scale: 1.03, boxShadow: '0 15px 35px rgba(11,163,96,0.15)', borderColor: '#0BA360' } : {}}
               drag={isCenter ? "x" : false}
               dragConstraints={{ left: 0, right: 0 }}
@@ -143,7 +143,10 @@ function ServiceSlider({ services, onSelectService }: { services: any[], onSelec
                   setCurrentIndex(index);
                 }
               }}
-              style={{ cursor: isCenter ? (isDragging ? 'grabbing' : 'grab') : 'pointer' }}
+              style={{ 
+                cursor: isCenter ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+                borderColor: '#f1f5f9'
+              }}
             >
               <div className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mb-6 text-emerald-600 border border-emerald-100 shadow-sm transition-transform duration-300 hover:rotate-12">
                 {service.icon === 'Activity' && <Activity size={28} strokeWidth={1.5} />}
@@ -1772,6 +1775,7 @@ export default function App() {
     </div>
     </motion.div>
       )}
+    </AnimatePresence>
 
       {/* Custom Modal */}
       <AnimatePresence>
@@ -1819,7 +1823,6 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-    </AnimatePresence>
     </Suspense>
   );
 }

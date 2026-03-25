@@ -541,7 +541,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <BarChart data={poliChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} interval={0} angle={-45} textAnchor="end" height={60} />
@@ -570,7 +570,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
                       <Pie
                         data={doctorChartData}
@@ -606,7 +606,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 </button>
               </div>
               <div className="h-64 md:h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <LineChart data={trendChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="dayName" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
@@ -2075,7 +2075,7 @@ function LaporanView() {
       <div className="bg-white p-6 rounded-[24px] shadow-sm border border-slate-100 mb-8">
         <h3 className="text-lg font-bold text-slate-900 mb-6">Statistik Kunjungan Bulanan per Poli</h3>
         <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={laporan.statistikPoli} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />

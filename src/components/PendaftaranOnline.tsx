@@ -318,21 +318,29 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
       <main className="flex-1 overflow-y-auto pt-16 md:pt-0 relative bg-slate-50">
         <div className="max-w-4xl mx-auto p-4 sm:p-8 pb-24 md:pb-8">
           <AnimatePresence mode="wait">
-            {activeTab === 'dashboard' && <PatientDashboard key="dashboard" onNavigate={setActiveTab} appointments={appointments} user={user} onStatusChange={handleStatusChange} onPanggilAntrian={handlePanggilAntrian} onDetailPasien={handleDetailPasien} callingId={callingId} />}
-            {activeTab === 'buat-janji' && <FormPendaftaran key="buat-janji" onBookingSuccess={handleNewBooking} poliklinikList={poliklinikList} jadwalDokter={jadwalDokter} user={user} initialDoctor={initialDoctor} doctorsList={doctorsList} />}
-            {activeTab === 'riwayat' && <RiwayatPendaftaran key="riwayat" appointments={appointments} onCancel={handleCancel} />}
-            {activeTab === 'rekam-medis' && <RekamMedis key="rekam-medis" appointments={appointments} user={user} />}
-            {activeTab === 'cek-antrian' && <CekAntrian key="cek-antrian" appointments={appointments} allAppointments={allAppointments} onRefresh={async () => {
-              const data = await getAppointmentsDB();
-              setAllAppointments(data);
-              if (user?.role === 'patient') {
-                setAppointments(data.filter((a: any) => a.nik === user.nik));
-              } else {
-                setAppointments(data);
-              }
-            }} />}
-            {activeTab === 'jadwal-dokter' && <JadwalDokter key="jadwal-dokter" jadwalDokter={jadwalDokter} poliklinikList={poliklinikList} doctorsList={doctorsList} />}
-            {activeTab === 'profile' && <Profile key="profile" user={user} onUpdate={(u) => { if(onUpdateUser) onUpdateUser(u); }} onBack={() => setActiveTab('dashboard')} />}
+            {activeTab === 'dashboard' ? (
+              <PatientDashboard key="dashboard" onNavigate={setActiveTab} appointments={appointments} user={user} onStatusChange={handleStatusChange} onPanggilAntrian={handlePanggilAntrian} onDetailPasien={handleDetailPasien} callingId={callingId} />
+            ) : activeTab === 'buat-janji' ? (
+              <FormPendaftaran key="buat-janji" onBookingSuccess={handleNewBooking} poliklinikList={poliklinikList} jadwalDokter={jadwalDokter} user={user} initialDoctor={initialDoctor} doctorsList={doctorsList} />
+            ) : activeTab === 'riwayat' ? (
+              <RiwayatPendaftaran key="riwayat" appointments={appointments} onCancel={handleCancel} />
+            ) : activeTab === 'rekam-medis' ? (
+              <RekamMedis key="rekam-medis" appointments={appointments} user={user} />
+            ) : activeTab === 'cek-antrian' ? (
+              <CekAntrian key="cek-antrian" appointments={appointments} allAppointments={allAppointments} onRefresh={async () => {
+                const data = await getAppointmentsDB();
+                setAllAppointments(data);
+                if (user?.role === 'patient') {
+                  setAppointments(data.filter((a: any) => a.nik === user.nik));
+                } else {
+                  setAppointments(data);
+                }
+              }} />
+            ) : activeTab === 'jadwal-dokter' ? (
+              <JadwalDokter key="jadwal-dokter" jadwalDokter={jadwalDokter} poliklinikList={poliklinikList} doctorsList={doctorsList} />
+            ) : activeTab === 'profile' ? (
+              <Profile key="profile" user={user} onUpdate={(u) => { if(onUpdateUser) onUpdateUser(u); }} onBack={() => setActiveTab('dashboard')} />
+            ) : null}
           </AnimatePresence>
         </div>
       </main>
