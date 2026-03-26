@@ -1,4 +1,4 @@
-import { Doctor, Service, Testimonial } from './types';
+import { Doctor, Service, Testimonial } from './types.js';
 
 export const DOCTORS: Doctor[] = [
   {

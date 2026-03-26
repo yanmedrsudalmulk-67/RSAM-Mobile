@@ -1,9 +1,16 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
-import { supabase } from './server/supabase';
+import { supabase } from './server/supabase.js';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+
+// Dynamic import for vite to avoid issues in production/Vercel
+let createViteServer: any;
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  import('vite').then(m => {
+    createViteServer = m.createServer;
+  });
+}
 
 async function uploadToSupabaseStorage(base64Data: string, folder: string, prefix: string) {
   const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -88,6 +95,11 @@ const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', environment: process.env.VERCEL ? 'vercel' : 'local' });
+});
+
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
@@ -169,7 +181,7 @@ app.get('/api/logos', async (req, res) => {
       if (error) {
         if (error.message.includes('Could not find the table')) {
           // Fallback to constants if table is missing
-          const { DOCTORS } = await import('./src/constants');
+          const { DOCTORS } = await import('./src/constants.js');
           return res.json(DOCTORS.map(d => ({
             id_dokter: d.id,
             nama_dokter: d.name,
@@ -2243,6 +2255,7 @@ app.get('/api/logos', async (req, res) => {
 // Vite middleware for development
 async function setupVite() {
   if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
