@@ -89,9 +89,6 @@ async function deleteFromSupabaseStorage(fileUrl: string) {
 }
 
 const app = express();
-export default app;
-
-const PORT = 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -2276,6 +2273,7 @@ async function setupVite() {
 }
 
 if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 3000;
   setupVite().then(() => {
     app.listen(PORT, '0.0.0.0', async () => {
       console.log(`Server running on http://localhost:${PORT}`);
@@ -2304,3 +2302,5 @@ if (!process.env.VERCEL) {
     process.exit(1);
   });
 }
+
+export default app;

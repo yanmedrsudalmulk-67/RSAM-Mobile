@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "framework": "vite",
   "builds": [
     {
       "src": "package.json",
@@ -19,6 +20,17 @@
     {
       "source": "/((?!api/|.*\\.).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
     }
   ]
 }
