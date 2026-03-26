@@ -40,12 +40,14 @@ import { SERVICES, TESTIMONIALS, DOCTORS } from './constants';
 import { getJadwalDokterDB, getDokterDB } from './db';
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const PendaftaranOnline = lazy(() => import('./components/PendaftaranOnline'));
-const Login = lazy(() => import('./components/Login'));
+const Login = lazy(() => import('./components/LoginComponent'));
 const Profile = lazy(() => import('./components/Profile'));
 const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
 const DaftarDokter = lazy(() => import('./components/DaftarDokter'));
 import { supabase } from './lib/supabase';
 import { checkIsCuti } from './utils/doctorUtils';
+
+import { useSiteAssets } from './hooks/useSiteAssets';
 
 function ServiceSlider({ services, onSelectService }: { services: any[], onSelectService: (service: any) => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -218,6 +220,7 @@ function ServiceSlider({ services, onSelectService }: { services: any[], onSelec
 }
 
 export default function App() {
+  const { assets, loading: assetsLoading } = useSiteAssets();
   const [view, setView] = useState<'website' | 'dashboard' | 'pendaftaran' | 'profile' | 'riwayat' | 'daftar-dokter'>('website');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<any | null>(null);
@@ -253,8 +256,8 @@ export default function App() {
   const [heroVisible, setHeroVisible] = useState(false);
   const [tentangKamiImageIndex, setTentangKamiImageIndex] = useState(0);
   const tentangKamiImages = [
-    "/tentang-kami.jpg",
-    "/uploads/foto_pasien/gedung-baru.jpg"
+    assets.about_image1 || "/tentang-kami.jpg",
+    assets.about_image2 || "/uploads/foto_pasien/gedung-baru.jpg"
   ];
 
   const handleRippleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -696,7 +699,7 @@ export default function App() {
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5 }}
         >
-          <WelcomeScreen onGetStarted={handleGetStarted} />
+          <WelcomeScreen onGetStarted={handleGetStarted} assets={assets} />
         </motion.div>
       ) : !user ? (
         <motion.div
@@ -714,7 +717,7 @@ export default function App() {
               </div>
             </div>
           )}
-          <Login onLogin={handleLogin} />
+          <Login onLogin={handleLogin} assets={assets} />
         </motion.div>
       ) : view === 'dashboard' ? (
         <motion.div key="dashboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -735,7 +738,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <Dashboard onBack={() => setView('website')} />
+            <Dashboard onBack={() => setView('website')} assets={assets} />
           )}
         </motion.div>
       ) : view === 'pendaftaran' ? (
@@ -782,7 +785,7 @@ export default function App() {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 bg-white-600 rounded-lg flex items-center justify-center text-white shadow-lg overflow-hidden">
-                <img src="/logo-1.jpg" alt="Logo" className="w-full h-full object-cover" />
+                <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-emerald-400 leading-tight">UOBK RSUD AL-MULK</h1>
@@ -928,7 +931,7 @@ export default function App() {
         <section className="relative h-[calc(100vh-5rem)] flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img 
-              src="/rsud-al-mulk.jpg" 
+              src={assets.hero_bg || "/rsud-al-mulk.jpg"} 
               alt="RSUD AL-MULK Building" 
               className="w-full h-full object-cover object-top md:object-[center_10%]"
               referrerPolicy="no-referrer"
@@ -1639,7 +1642,7 @@ export default function App() {
                 {footerLogos.find(l => l.nama_instansi === 'logo_rsud')?.gambar_logo ? (
                   <img src={footerLogos.find(l => l.nama_instansi === 'logo_rsud')?.gambar_logo} alt="Logo RSUD" className="w-full h-full object-cover" />
                 ) : (
-                  <img src="/logo-1.jpg" alt="Logo" className="w-full h-full object-cover" />
+                  <img src={assets.logo_footer || assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
                 )}
                 </div>
                 <div>

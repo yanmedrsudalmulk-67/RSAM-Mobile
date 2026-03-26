@@ -4,30 +4,31 @@ import { Stethoscope, ChevronsRight } from 'lucide-react';
 
 interface WelcomeScreenProps {
   onGetStarted: () => void;
+  assets: Record<string, string>;
 }
 
-export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onGetStarted, assets }: WelcomeScreenProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const slides = [
     {
       id: 1,
-      image: '/rsud-al-mulk.jpg',
+      image: assets.welcome_slide1 || '/rsud-al-mulk.jpg',
       alt: 'Pendaftaran'
     },
     {
       id: 2,
-      image: '/fasilitas-1.jpg',
+      image: assets.welcome_slide2 || '/fasilitas-1.jpg',
       alt: 'Ruang Tunggu Rajal'
     },
     {
       id: 3,
-      image: '/fasilitas-4.jpg',
+      image: assets.welcome_slide3 || '/fasilitas-4.jpg',
       alt: 'tentang kami'
     },
     {
       id: 4,
-      image: '/fasilitas-5.jpg',
+      image: assets.welcome_slide4 || '/fasilitas-5.jpg',
       alt: 'rsud al-mulk'
     }
   ];
@@ -147,7 +148,7 @@ export default function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
             className="flex items-center justify-center mb-4 lg:mb-8 mx-auto lg:mx-0"
           >
             <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-white-600 rounded-2xl flex items-center justify-center text-white shadow-lg overflow-hidden">
-              <img src="/logo-1.jpg" alt="Logo" className="w-full h-full object-cover" />
+              <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
             </div>
           </motion.div>
           

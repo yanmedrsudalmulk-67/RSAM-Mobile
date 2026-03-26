@@ -45,6 +45,7 @@ import { LogoFooterManagement } from './LogoFooterManagement';
 import { SosialMediaManagement } from './SosialMediaManagement';
 import { DokterManagement } from './DokterManagement';
 import ChartModal from './ChartModal';
+import { SiteAssetEditor } from './SiteAssetEditor';
 import { 
   getAppointmentsDB, 
   updateAppointmentStatusDB,
@@ -79,7 +80,7 @@ import {
 } from '../db';
 import { supabase } from '../lib/supabase';
 
-export default function Dashboard({ onBack }: { onBack: () => void }) {
+export default function Dashboard({ onBack, assets }: { onBack: () => void, assets: Record<string, string> }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeChartModal, setActiveChartModal] = useState<'bar' | 'pie' | 'line' | null>(null);
   const [loadingCharts, setLoadingCharts] = useState(false);
@@ -409,7 +410,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <div className="relative mb-3">
             <div className="absolute inset-0 bg-white/20 blur-md rounded-full"></div>
             <img 
-              src="/logo-1.jpg" 
+              src={assets.logo_main || "/logo-1.jpg"} 
               alt="Hospital" 
               className={`rounded-full border-2 border-white/20 p-0.5 bg-white relative z-10 transition-all duration-300 ${isCollapsed ? 'w-10 h-10' : 'w-14 h-14'}`}
               referrerPolicy="no-referrer"
@@ -460,6 +461,7 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
                 <SidebarItem isCollapsed={false} icon={<Share2 size={18} />} label="Sosial Media" active={activeTab === 'sosial-media'} onClick={() => { setActiveTab('sosial-media'); setIsMobileMenuOpen(false); }} />
                 <SidebarItem isCollapsed={false} icon={<Users size={18} />} label="Manajemen Dokter" active={activeTab === 'dokter'} onClick={() => { setActiveTab('dokter'); setIsMobileMenuOpen(false); }} />
                 <SidebarItem isCollapsed={false} icon={<User size={18} />} label="Manajemen Pasien" active={activeTab === 'pasien'} onClick={() => { setActiveTab('pasien'); setIsMobileMenuOpen(false); }} />
+                <SidebarItem isCollapsed={false} icon={<Image size={18} />} label="Site Assets" active={activeTab === 'site-assets'} onClick={() => { setActiveTab('site-assets'); setIsMobileMenuOpen(false); }} />
               </SidebarDropdown>
             </ul>
           </div>
@@ -833,6 +835,8 @@ export default function Dashboard({ onBack }: { onBack: () => void }) {
           <LogoFooterManagement />
         ) : activeTab === 'sosial-media' ? (
           <SosialMediaManagement />
+        ) : activeTab === 'site-assets' ? (
+          <SiteAssetEditor />
         ) : null}
       </main>
 

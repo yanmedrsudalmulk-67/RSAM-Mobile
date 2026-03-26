@@ -45,6 +45,8 @@ export function LogoFooterManagement() {
     }
   };
 
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+
   useEffect(() => {
     fetchLogos();
   }, []);
@@ -156,24 +158,25 @@ export function LogoFooterManagement() {
     const logoToDelete = logos.find(l => l.id_logo === id);
 
     if (logoToDelete?.status === 'aktif' && activeLogosCount <= 3) {
-      alert('Minimal harus ada 3 logo aktif. Tidak dapat menghapus logo aktif ini.');
+      setError('Minimal harus ada 3 logo aktif. Tidak dapat menghapus logo aktif ini.');
+      setConfirmDelete(null);
       return;
     }
 
-    if (window.confirm('Apakah Anda yakin ingin menghapus logo ini?')) {
-      try {
-        const res = await fetch(`/api/logos/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        
-        if (res.ok) {
-          await fetchLogos();
-        } else {
-          alert(data.error || 'Gagal menghapus logo');
-        }
-      } catch (err: any) {
-        console.error(err);
-        alert(err.message || 'Terjadi kesalahan jaringan');
+    try {
+      const res = await fetch(`/api/logos/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        await fetchLogos();
+      } else {
+        setError(data.error || 'Gagal menghapus logo');
       }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Terjadi kesalahan jaringan');
+    } finally {
+      setConfirmDelete(null);
     }
   };
 
@@ -235,7 +238,7 @@ export function LogoFooterManagement() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end space-x-2 relative">
                         <button 
                           onClick={() => handleOpenModal(logo)}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
@@ -244,12 +247,32 @@ export function LogoFooterManagement() {
                           <Edit size={18} />
                         </button>
                         <button 
-                          onClick={() => handleDelete(logo.id_logo)}
+                          onClick={() => setConfirmDelete(logo.id_logo)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Hapus"
                         >
                           <Trash2 size={18} />
                         </button>
+                        
+                        {confirmDelete === logo.id_logo && (
+                          <div className="absolute right-0 top-10 bg-white shadow-xl rounded-xl p-3 border border-slate-200 z-10 w-48 text-left">
+                            <p className="text-xs text-slate-700 mb-2 font-medium">Yakin ingin menghapus?</p>
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={() => handleDelete(logo.id_logo)}
+                                className="flex-1 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                              >
+                                Ya
+                              </button>
+                              <button 
+                                onClick={() => setConfirmDelete(null)}
+                                className="flex-1 px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded hover:bg-slate-200"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

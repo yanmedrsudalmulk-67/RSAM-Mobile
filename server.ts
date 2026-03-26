@@ -103,166 +103,96 @@ app.use((req, res, next) => {
   next();
 });
 
-// API Routes - Define these BEFORE any other middleware
-app.get('/api/logos', async (req, res) => {
-    console.log('GET /api/logos hit with query:', req.query);
-    try {
-      const { status } = req.query;
-      let query = supabase.from('logo_footer').select('*').order('id_logo', { ascending: true });
+// Serve uploads folder
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+app.get('/api/site-assets', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('site_assets').select('*');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (error: any) {
+    console.error('Error fetching site assets:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/site-assets', async (req, res) => {
+  try {
+    const { asset_key, asset_url, description } = req.body;
+    
+    // Get old asset to delete its file
+    const { data: oldAsset } = await supabase
+      .from('site_assets')
+      .select('asset_url')
+      .eq('asset_key', asset_key)
+      .maybeSingle();
       
-      if (status) {
-        query = query.eq('status', status);
-      }
-      
-      const { data: logos, error } = await query;
-      if (error) throw error;
-      res.json(logos);
-    } catch (error: any) {
-      console.error('Error fetching logos:', error);
-      res.status(500).json({ error: error.message });
+    if (oldAsset && oldAsset.asset_url && oldAsset.asset_url !== asset_url) {
+      await deleteFromSupabaseStorage(oldAsset.asset_url);
     }
-  });
 
-  app.get('/api/jadwal_dokter', async (req, res) => {
-    try {
-      const { data: jadwal, error } = await supabase.from('jadwal_dokter').select('*');
-      if (error) throw error;
+    const { data, error } = await supabase
+      .from('site_assets')
+      .upsert(
+        { asset_key, asset_url, description, updated_at: new Date().toISOString() },
+        { onConflict: 'asset_key' }
+      )
+      .select()
+      .single();
       
-      // Group by nama_dokter and poli
-      const grouped = jadwal.reduce((acc: any, curr: any) => {
-        const key = `${curr.nama_dokter}_${curr.poli}`;
-        if (!acc[key]) {
-          acc[key] = {
-            id: curr.id,
-            nama_dokter: curr.nama_dokter,
-            poli: curr.poli,
-            status_dokter: curr.status_dokter,
-            tanggal_mulai_cuti: curr.tanggal_mulai_cuti,
-            tanggal_selesai_cuti: curr.tanggal_selesai_cuti,
-            schedules: [{
-              id: curr.id,
-              hari_praktek: curr.hari_praktek,
-              jam_mulai: curr.jam_mulai,
-              jam_selesai: curr.jam_selesai,
-              kuota_harian: curr.kuota_harian,
-              status_dokter: curr.status_dokter
-            }]
-          };
-        } else {
-          if (curr.status_dokter === 'cuti') {
-            acc[key].status_dokter = 'cuti';
-            acc[key].tanggal_mulai_cuti = curr.tanggal_mulai_cuti;
-            acc[key].tanggal_selesai_cuti = curr.tanggal_selesai_cuti;
-          }
-          acc[key].schedules.push({
-            id: curr.id,
-            hari_praktek: curr.hari_praktek,
-            jam_mulai: curr.jam_mulai,
-            jam_selesai: curr.jam_selesai,
-            kuota_harian: curr.kuota_harian,
-            status_dokter: curr.status_dokter
-          });
-        }
-        return acc;
-      }, {});
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    console.error('Error updating site asset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/site-assets/:key', async (req, res) => {
+  try {
+    const { key } = req.params;
+    
+    // Get the asset URL first to delete from storage
+    const { data: assetData } = await supabase
+      .from('site_assets')
+      .select('asset_url')
+      .eq('asset_key', key)
+      .maybeSingle();
       
-      res.json(Object.values(grouped));
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    if (assetData && assetData.asset_url) {
+      await deleteFromSupabaseStorage(assetData.asset_url);
     }
-  });
 
-  app.get('/api/dokter', async (req, res) => {
-    try {
-      const { data: dokter, error } = await supabase.from('dokter').select('*');
-      if (error) {
-        if (error.message.includes('Could not find the table')) {
-          // Fallback to constants if table is missing
-          const { DOCTORS } = await import('./src/constants.js');
-          return res.json(DOCTORS.map(d => ({
-            id_dokter: d.id,
-            nama_dokter: d.name,
-            spesialis: d.specialty,
-            poli: d.specialty, // Use specialty as poli for fallback
-            jadwal_praktek: d.schedule,
-            foto_dokter: d.imageUrl
-          })));
-        }
-        throw error;
-      }
-      res.json(dokter);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Health check
-  app.post('/api/seed-data', async (req, res) => {
-    try {
-      const { data: checkData, error: checkError } = await supabase.from('obat_master').select('id').limit(1);
-      if (checkError) {
-        return res.status(400).json({ error: 'Tabel obat_master tidak ditemukan. Pastikan Anda sudah menjalankan database.sql di Supabase.' });
-      }
-
-      const obat = [];
-      const prefixes = ['Amox', 'Para', 'Ibu', 'Cef', 'Dexa', 'Mef', 'Ran', 'Ome', 'Lans', 'Met'];
-      const suffixes = ['cillin', 'cetamol', 'profen', 'trix', 'methasone', 'namic', 'tidine', 'prazole', 'formin', 'lol'];
-      const categories = ['Antibiotik', 'Analgesik', 'Anti-inflamasi', 'Antasida', 'Vitamin', 'Suplemen', 'Lainnya'];
-      const units = ['Tablet', 'Kapsul', 'Sirup', 'Salep', 'Injeksi', 'Pcs'];
-
-      for (let i = 1; i <= 500; i++) {
-        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-        const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
-        const name = `${prefix}${suffix} ${Math.floor(Math.random() * 500) + 100}mg`;
-        
-        obat.push({
-          nama_obat: name,
-          kategori: categories[Math.floor(Math.random() * categories.length)],
-          satuan: units[Math.floor(Math.random() * units.length)],
-          stok: Math.floor(Math.random() * 1000) + 50
-        });
-      }
-
-      for (let i = 0; i < obat.length; i += 100) {
-        const batch = obat.slice(i, i + 100);
-        await supabase.from('obat_master').insert(batch);
-      }
-
-      const diagnosa = [];
-      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const { error } = await supabase
+      .from('site_assets')
+      .delete()
+      .eq('asset_key', key);
       
-      for (let i = 1; i <= 500; i++) {
-        const letter = letters[Math.floor(Math.random() * letters.length)];
-        const num1 = Math.floor(Math.random() * 10);
-        const num2 = Math.floor(Math.random() * 10);
-        const code = `${letter}${num1}${num2}.${Math.floor(Math.random() * 9)}`;
-        
-        diagnosa.push({
-          code: code,
-          name: `Diagnosa Penyakit ${code}`,
-          description: `Deskripsi medis untuk diagnosa ${code}`
-        });
-      }
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error('Error deleting site asset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
-      for (let i = 0; i < diagnosa.length; i += 100) {
-        const batch = diagnosa.slice(i, i + 100);
-        await supabase.from('icd10_codes').insert(batch);
-      }
-
-      res.json({ success: true, message: 'Berhasil menambahkan 500 data obat dan diagnosa.' });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+app.post('/api/upload-asset', express.json({ limit: '10mb' }), async (req, res) => {
+  try {
+    const { image, asset_key } = req.body;
+    if (!image || !asset_key) {
+      return res.status(400).json({ error: 'Image and asset_key are required' });
     }
-  });
+    
+    const fileUrl = await uploadToSupabaseStorage(image, 'site_assets', asset_key);
+    res.json({ url: fileUrl });
+  } catch (error: any) {
+    console.error('Error uploading asset:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString() });
-  });
-
-  // Serve uploads folder
-  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-
-  app.post('/api/upload', async (req, res) => {
+app.post('/api/upload', async (req, res) => {
     try {
       const { file, type, nik } = req.body;
       if (!file) return res.status(400).json({ error: 'No file provided' });
@@ -476,6 +406,17 @@ app.get('/api/logos', async (req, res) => {
 
       const fileUrl = await uploadToSupabaseStorage(image, 'foto_pasien', `profile_${userId}`);
       
+      // Get old photo to delete
+      const { data: oldUser } = await supabase
+        .from('users')
+        .select('foto_profil')
+        .eq('id', userId)
+        .single();
+      
+      if (oldUser?.foto_profil) {
+        await deleteFromSupabaseStorage(oldUser.foto_profil);
+      }
+
       // Update user record
       const { error } = await supabase
         .from('users')
@@ -851,7 +792,7 @@ app.get('/api/logos', async (req, res) => {
           saturasi: data.saturasi ? parseInt(data.saturasi.toString()) : null,
           diagnosa: Array.isArray(data.diagnosa) ? JSON.stringify(data.diagnosa) : data.diagnosa, // Fallback JSON
           tindakan: data.tindakan,
-          obat: Array.isArray(data.obat) ? JSON.stringify(data.obat) : data.obat,
+          obat: Array.isArray(data.resep) ? JSON.stringify(data.resep) : data.resep,
           dosis: data.dosis,
           pemeriksaan: data.pemeriksaan,
           updated_at: new Date().toISOString()
@@ -1155,6 +1096,19 @@ app.get('/api/logos', async (req, res) => {
           }));
         }
       }
+      
+      // Fallback to data.obat if resep_obat table doesn't exist or is empty
+      if (resep.length === 0 && data && data.obat) {
+        try {
+          if (typeof data.obat === 'string') {
+            resep = JSON.parse(data.obat);
+          } else if (Array.isArray(data.obat)) {
+            resep = data.obat;
+          }
+        } catch (e) {
+          console.warn('Could not parse data.obat as JSON', e);
+        }
+      }
 
       if (data && data.diagnosa) {
         try {
@@ -1182,44 +1136,6 @@ app.get('/api/logos', async (req, res) => {
         no_rm,
         resep
       });
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get('/api/diagnosa', async (req, res) => {
-    try {
-      const { data, error } = await supabase.from('diagnosa').select('*');
-      if (error) {
-        // Fallback if table doesn't exist
-        return res.json([
-          { value: 'A00', label: 'Cholera' },
-          { value: 'A01', label: 'Typhoid and paratyphoid fevers' },
-          { value: 'J00', label: 'Acute nasopharyngitis [common cold]' },
-          { value: 'J06.9', label: 'Acute upper respiratory infection, unspecified' },
-          { value: 'K29.7', label: 'Gastritis, unspecified' }
-        ]);
-      }
-      res.json(data.map((d: any) => ({ value: d.kode || d.id, label: `${d.kode || ''} ${d.nama || d.label}`.trim() })));
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  app.get('/api/obat', async (req, res) => {
-    try {
-      const { data, error } = await supabase.from('obat').select('*');
-      if (error) {
-        // Fallback if table doesn't exist
-        return res.json([
-          { value: 'Paracetamol', label: 'Paracetamol 500mg' },
-          { value: 'Amoxicillin', label: 'Amoxicillin 500mg' },
-          { value: 'Cefadroxil', label: 'Cefadroxil 500mg' },
-          { value: 'Antasida', label: 'Antasida Doen' },
-          { value: 'Vitamin C', label: 'Vitamin C 50mg' }
-        ]);
-      }
-      res.json(data.map((d: any) => ({ value: d.nama || d.id, label: d.nama || d.label })));
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -1311,6 +1227,19 @@ app.get('/api/logos', async (req, res) => {
     }
   });
 
+  app.get('/api/dokter', async (req, res) => {
+    try {
+      const { data, error } = await supabase.from('dokter').select('*').order('created_at', { ascending: false });
+      if (error) {
+        // Return empty array if table doesn't exist yet
+        return res.json([]);
+      }
+      res.json(data || []);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post('/api/dokter', express.json({ limit: '5mb' }), async (req, res) => {
     try {
       const { nama_dokter, spesialis, poli, jadwal_praktek, foto_dokter, is_rekomendasi, urutan_rekomendasi } = req.body;
@@ -1347,6 +1276,17 @@ app.get('/api/logos', async (req, res) => {
 
       if (foto_dokter && foto_dokter.startsWith('data:image')) {
         imageUrl = await uploadToSupabaseStorage(foto_dokter, 'dokter', 'dokter');
+        
+        // Delete old image
+        const { data: oldDoc } = await supabase
+          .from('dokter')
+          .select('foto_dokter')
+          .eq('id_dokter', id)
+          .single();
+        
+        if (oldDoc?.foto_dokter) {
+          await deleteFromSupabaseStorage(oldDoc.foto_dokter);
+        }
       }
 
       const { error } = await supabase.from('dokter').update({
@@ -1368,6 +1308,18 @@ app.get('/api/logos', async (req, res) => {
   app.delete('/api/dokter/:id', async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Delete image from storage
+      const { data: oldDoc } = await supabase
+        .from('dokter')
+        .select('foto_dokter')
+        .eq('id_dokter', id)
+        .single();
+      
+      if (oldDoc?.foto_dokter) {
+        await deleteFromSupabaseStorage(oldDoc.foto_dokter);
+      }
+
       const { error } = await supabase.from('dokter').delete().eq('id_dokter', id);
       if (error) throw error;
       res.json({ success: true });
@@ -1732,6 +1684,17 @@ app.get('/api/logos', async (req, res) => {
 
       if (imageUrl && imageUrl.startsWith('data:image')) {
         imageUrl = await uploadToSupabaseStorage(imageUrl, 'artikel_slider', 'slider');
+        
+        // Delete old image
+        const { data: oldArt } = await supabase
+          .from('artikel_portal_rs')
+          .select('gambar_slider')
+          .eq('id_artikel', id)
+          .single();
+        
+        if (oldArt?.gambar_slider) {
+          await deleteFromSupabaseStorage(oldArt.gambar_slider);
+        }
       }
 
       const { error } = await supabase.from('artikel_portal_rs').update({
@@ -2272,11 +2235,84 @@ async function setupVite() {
   }
 }
 
+async function setupSiteAssetsTable() {
+  const sql = `
+    CREATE TABLE IF NOT EXISTS public.site_assets (
+      id BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+      asset_key TEXT UNIQUE NOT NULL,
+      asset_url TEXT NOT NULL,
+      description TEXT,
+      updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Enable RLS
+    ALTER TABLE public.site_assets ENABLE ROW LEVEL SECURITY;
+
+    -- Create policies
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'site_assets' AND policyname = 'Allow public read access to site_assets'
+      ) THEN
+        CREATE POLICY "Allow public read access to site_assets" ON public.site_assets FOR SELECT USING (true);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'site_assets' AND policyname = 'Allow authenticated users to insert site_assets'
+      ) THEN
+        CREATE POLICY "Allow authenticated users to insert site_assets" ON public.site_assets FOR INSERT WITH CHECK (true);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'site_assets' AND policyname = 'Allow authenticated users to update site_assets'
+      ) THEN
+        CREATE POLICY "Allow authenticated users to update site_assets" ON public.site_assets FOR UPDATE USING (true);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_policies WHERE tablename = 'site_assets' AND policyname = 'Allow authenticated users to delete site_assets'
+      ) THEN
+        CREATE POLICY "Allow authenticated users to delete site_assets" ON public.site_assets FOR DELETE USING (true);
+      END IF;
+    END $$;
+  `;
+
+  try {
+    // Check if table exists first
+    const { error: checkError } = await supabase.from('site_assets').select('id').limit(1);
+    
+    if (checkError) {
+      // Table not found or schema cache issue
+      if (checkError.message.includes('Could not find the table') || checkError.code === 'PGRST116') {
+        console.log('Table "site_assets" not found or not in cache, attempting to create...');
+        const { error: rpcError } = await supabase.rpc('exec_sql', { sql });
+        
+        if (rpcError) {
+          console.error('\x1b[31m%s\x1b[0m', 'CRITICAL ERROR: Could not create "site_assets" table automatically.');
+          console.error('\x1b[33m%s\x1b[0m', 'Please run the following SQL in your Supabase SQL Editor:');
+          console.log(sql);
+        } else {
+          console.log('Table "site_assets" created successfully.');
+        }
+      } else {
+        console.error('Error checking "site_assets" table:', checkError.message);
+      }
+    } else {
+      console.log('Table "site_assets" verified.');
+    }
+  } catch (err) {
+    console.error('Unexpected error during site_assets setup:', err);
+  }
+}
+
 if (!process.env.VERCEL) {
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT) || 3000;
   setupVite().then(() => {
     app.listen(PORT, '0.0.0.0', async () => {
       console.log(`Server running on http://localhost:${PORT}`);
+      
+      // Initialize site_assets table
+      await setupSiteAssetsTable();
       
       // Check if Supabase bucket exists
       try {

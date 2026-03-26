@@ -74,7 +74,7 @@ export const getMedicalRecordDB = async (id: string) => {
 
 export const getDiagnosaDB = async () => {
   try {
-    return await fetchWithErr('/api/diagnosa');
+    return await fetchWithErr('/api/icd10');
   } catch (error) {
     console.error(error);
     return [];

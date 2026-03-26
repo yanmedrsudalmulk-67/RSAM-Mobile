@@ -182,6 +182,14 @@ CREATE TABLE IF NOT EXISTS artikel_portal_rs (
     views INTEGER DEFAULT 0
 );
 
+-- Site Assets Table
+CREATE TABLE IF NOT EXISTS site_assets (
+    asset_key TEXT PRIMARY KEY,
+    asset_url TEXT NOT NULL,
+    description TEXT,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Seed Initial Data
 INSERT INTO stok_vaksin (id, nama_vaksin, stok_tersedia, last_update) VALUES 
 ('1', 'Meningitis', 10, CURRENT_DATE::text),
