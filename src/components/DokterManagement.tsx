@@ -24,6 +24,7 @@ export function DokterManagement() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     nama_dokter: '',
@@ -146,21 +147,27 @@ export function DokterManagement() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus dokter ini?')) {
-      try {
-        const res = await fetch(`/api/dokter/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        
-        if (res.ok) {
-          await fetchDokters();
-        } else {
-          alert(data.error || 'Gagal menghapus dokter');
-        }
-      } catch (err: any) {
-        console.error(err);
-        alert(err.message || 'Terjadi kesalahan jaringan');
+  const handleDelete = (id: string) => {
+    setDeletingId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+    
+    try {
+      const res = await fetch(`/api/dokter/${deletingId}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (res.ok) {
+        await fetchDokters();
+      } else {
+        setError(data.error || 'Gagal menghapus dokter');
       }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Terjadi kesalahan jaringan');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -345,6 +352,17 @@ export function DokterManagement() {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Jadwal Praktek</label>
+                  <input 
+                    type="text" 
+                    value={formData.jadwal_praktek}
+                    onChange={e => setFormData({...formData, jadwal_praktek: e.target.value})}
+                    className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="Contoh: Senin - Jumat, 08:00 - 14:00"
+                  />
+                </div>
+
                 <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <div className="flex items-center gap-2">
                     <input
@@ -404,6 +422,36 @@ export function DokterManagement() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-xl">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Hapus Dokter</h3>
+              <p className="text-slate-600 mb-6">
+                Apakah Anda yakin ingin menghapus dokter ini? Data yang dihapus tidak dapat dikembalikan.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeletingId(null)}
+                  className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white font-medium hover:bg-red-700 rounded-xl transition-colors"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

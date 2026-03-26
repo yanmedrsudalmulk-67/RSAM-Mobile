@@ -1,17 +1,16 @@
 import { supabase } from './server/supabase.js';
 
 async function checkSchema() {
-  const { data, error } = await supabase.rpc('get_table_schema', { table_name: 'site_assets' });
+  const { data, error } = await supabase.from('resep_obat').select('*').limit(1);
   if (error) {
-    // If get_table_schema doesn't exist, try another way
-    const { data: cols, error: colError } = await supabase.from('site_assets').select('*').limit(0);
-    if (colError) {
-      console.error('Error checking site_assets schema:', colError.message);
-    } else {
-      console.log('Successfully queried site_assets (table exists).');
-    }
+    console.error('Error checking resep_obat schema:', error.message);
   } else {
-    console.log('Table schema:', data);
+    console.log('Successfully queried resep_obat. First row:', data[0]);
+    if (data.length === 0) {
+      console.log('Table is empty, but query succeeded.');
+    } else {
+      console.log('Columns:', Object.keys(data[0]));
+    }
   }
 }
 

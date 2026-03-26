@@ -1229,7 +1229,7 @@ app.post('/api/upload', async (req, res) => {
 
   app.get('/api/dokter', async (req, res) => {
     try {
-      const { data, error } = await supabase.from('dokter').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('dokter').select('*');
       if (error) {
         // Return empty array if table doesn't exist yet
         return res.json([]);
@@ -2305,6 +2305,31 @@ async function setupSiteAssetsTable() {
   }
 }
 
+async function setupDokterTable() {
+  const sql = `
+    DO $$ 
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dokter' AND column_name = 'is_rekomendasi') THEN
+        ALTER TABLE public.dokter ADD COLUMN is_rekomendasi BOOLEAN DEFAULT false;
+      END IF;
+      
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'dokter' AND column_name = 'urutan_rekomendasi') THEN
+        ALTER TABLE public.dokter ADD COLUMN urutan_rekomendasi INTEGER DEFAULT 0;
+      END IF;
+    END $$;
+  `;
+  try {
+    const { error } = await supabase.rpc('exec_sql', { sql });
+    if (error) {
+      console.error('Error setting up dokter table columns:', error.message);
+    } else {
+      console.log('Successfully set up dokter table columns.');
+    }
+  } catch (err) {
+    console.error('Failed to set up dokter table columns:', err);
+  }
+}
+
 if (!process.env.VERCEL) {
   const PORT = Number(process.env.PORT) || 3000;
   setupVite().then(() => {
@@ -2313,6 +2338,7 @@ if (!process.env.VERCEL) {
       
       // Initialize site_assets table
       await setupSiteAssetsTable();
+      await setupDokterTable();
       
       // Check if Supabase bucket exists
       try {

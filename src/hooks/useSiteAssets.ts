@@ -15,7 +15,10 @@ const DEFAULT_ASSETS: Record<string, string> = {
   login_bg: '/rsud-al-mulk.jpg',
   about_image1: '/tentang-kami.jpg',
   about_image2: '/uploads/foto_pasien/gedung-baru.jpg',
-  footer_logo: '/logo-1.jpg'
+  footer_logo: '/logo-1.jpg',
+  fasilitas_waiting_room: '/fasilitas-4.jpg',
+  teknologi_medical_device: '/fasilitas-1.jpg',
+  fasilitas_hospital_ward: '/fasilitas-5.jpg'
 };
 
 export function useSiteAssets() {

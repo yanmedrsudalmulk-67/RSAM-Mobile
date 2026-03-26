@@ -1388,23 +1388,32 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-4">
                 <img 
-                  src="/fasilitas-4.jpg" 
+                  src={assets.fasilitas_waiting_room} 
                   alt="Waiting Room" 
                   className="rounded-2xl shadow-lg w-full h-full object-cover"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/rsud-al-mulk.jpg';
+                  }}
                 />
                 <div className="space-y-4">
                   <img 
-                    src="/fasilitas-1.jpg" 
+                    src={assets.teknologi_medical_device} 
                     alt="Medical Device" 
                     className="rounded-2xl shadow-lg w-full object-cover"
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/rsud-al-mulk.jpg';
+                    }}
                   />
                   <img 
-                    src="/fasilitas-5.jpg" 
+                    src={assets.fasilitas_hospital_ward} 
                     alt="Hospital Ward" 
                     className="rounded-2xl shadow-lg w-full object-cover"
                     referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/rsud-al-mulk.jpg';
+                    }}
                   />
                 </div>
               </div>
