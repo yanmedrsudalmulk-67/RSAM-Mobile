@@ -25,7 +25,7 @@ const ASSET_LABELS: Record<string, string> = {
   fasilitas_hospital_ward: 'Hospital Ward'
 };
 
-export function SiteAssetEditor() {
+export function SiteAssetEditor({ onUpdate }: { onUpdate?: () => void }) {
   const [assets, setAssets] = useState<SiteAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -95,6 +95,7 @@ export function SiteAssetEditor() {
 
         setMessage({ type: 'success', text: `Berhasil memperbarui ${ASSET_LABELS[key]}` });
         fetchAssets();
+        if (onUpdate) onUpdate();
       } catch (error: any) {
         console.error('Upload error:', error);
         setMessage({ type: 'error', text: error.message || 'Terjadi kesalahan saat mengunggah' });
@@ -120,6 +121,7 @@ export function SiteAssetEditor() {
 
       setMessage({ type: 'success', text: `Berhasil menghapus ${ASSET_LABELS[key]}` });
       fetchAssets();
+      if (onUpdate) onUpdate();
     } catch (error: any) {
       console.error('Delete error:', error);
       setMessage({ type: 'error', text: error.message || 'Terjadi kesalahan saat menghapus' });

@@ -80,7 +80,7 @@ import {
 } from '../db';
 import { supabase } from '../lib/supabase';
 
-export default function Dashboard({ onBack, assets }: { onBack: () => void, assets: Record<string, string> }) {
+export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: () => void, assets: Record<string, string>, onAssetsUpdate?: () => void }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeChartModal, setActiveChartModal] = useState<'bar' | 'pie' | 'line' | null>(null);
   const [loadingCharts, setLoadingCharts] = useState(false);
@@ -543,7 +543,7 @@ export default function Dashboard({ onBack, assets }: { onBack: () => void, asse
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={activeChartModal}>
                     <BarChart data={poliChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} interval={0} angle={-45} textAnchor="end" height={60} />
@@ -572,7 +572,7 @@ export default function Dashboard({ onBack, assets }: { onBack: () => void, asse
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={activeChartModal}>
                     <PieChart>
                       <Pie
                         data={doctorChartData}
@@ -608,7 +608,7 @@ export default function Dashboard({ onBack, assets }: { onBack: () => void, asse
                 </button>
               </div>
               <div className="h-64 md:h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={activeChartModal}>
                   <LineChart data={trendChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="dayName" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
@@ -836,7 +836,7 @@ export default function Dashboard({ onBack, assets }: { onBack: () => void, asse
         ) : activeTab === 'sosial-media' ? (
           <SosialMediaManagement />
         ) : activeTab === 'site-assets' ? (
-          <SiteAssetEditor />
+          <SiteAssetEditor onUpdate={onAssetsUpdate} />
         ) : null}
       </main>
 

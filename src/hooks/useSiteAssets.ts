@@ -25,28 +25,28 @@ export function useSiteAssets() {
   const [assets, setAssets] = useState<Record<string, string>>(DEFAULT_ASSETS);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAssets = async () => {
-      try {
-        const res = await fetch('/api/site-assets');
-        if (!res.ok) throw new Error('Gagal mengambil aset');
-        const data: SiteAsset[] = await res.json();
-        
-        const assetMap: Record<string, string> = { ...DEFAULT_ASSETS };
-        data.forEach(asset => {
-          assetMap[asset.asset_key] = asset.asset_url;
-        });
-        
-        setAssets(assetMap);
-      } catch (error) {
-        console.error('Error fetching site assets:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchAssets = async () => {
+    try {
+      const res = await fetch('/api/site-assets');
+      if (!res.ok) throw new Error('Gagal mengambil aset');
+      const data: SiteAsset[] = await res.json();
+      
+      const assetMap: Record<string, string> = { ...DEFAULT_ASSETS };
+      data.forEach(asset => {
+        assetMap[asset.asset_key] = asset.asset_url;
+      });
+      
+      setAssets(assetMap);
+    } catch (error) {
+      console.error('Error fetching site assets:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAssets();
   }, []);
 
-  return { assets, loading };
+  return { assets, loading, refresh: fetchAssets };
 }

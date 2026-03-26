@@ -33,7 +33,8 @@ import {
   MessageCircle,
   Facebook,
   Instagram,
-  Video
+  Video,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SERVICES, TESTIMONIALS, DOCTORS } from './constants';
@@ -46,6 +47,54 @@ const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
 const DaftarDokter = lazy(() => import('./components/DaftarDokter'));
 import { supabase } from './lib/supabase';
 import { checkIsCuti } from './utils/doctorUtils';
+
+const ScrollHint = () => {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      // Hide if scrolled more than 30% of viewport height
+      setVisible(scrollY < window.innerHeight * 0.3);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ 
+            opacity: 1, 
+            y: [0, 10, 0],
+          }}
+          exit={{ opacity: 0, y: 20 }}
+          transition={{ 
+            opacity: { duration: 0.3 },
+            y: { 
+              repeat: Infinity, 
+              duration: 1.5, 
+              ease: "easeInOut" 
+            }
+          }}
+          onClick={() => {
+            document.getElementById("next-section")?.scrollIntoView({
+              behavior: "smooth",
+            });
+          }}
+          className="fixed bottom-5 right-4 z-[60] flex md:hidden items-center justify-center w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-lg cursor-pointer group"
+        >
+          <ChevronDown className="text-white" size={24} />
+          <div className="absolute bottom-full mb-2 right-0 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            Scroll ke bawah
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 import { useSiteAssets } from './hooks/useSiteAssets';
 
@@ -220,7 +269,7 @@ function ServiceSlider({ services, onSelectService }: { services: any[], onSelec
 }
 
 export default function App() {
-  const { assets, loading: assetsLoading } = useSiteAssets();
+  const { assets, loading: assetsLoading, refresh: refreshAssets } = useSiteAssets();
   const [view, setView] = useState<'website' | 'dashboard' | 'pendaftaran' | 'profile' | 'riwayat' | 'daftar-dokter'>('website');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<any | null>(null);
@@ -233,6 +282,7 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const handleGetStarted = () => {
     setShowWelcome(false);
@@ -738,7 +788,7 @@ export default function App() {
               </div>
             </div>
           ) : (
-            <Dashboard onBack={() => setView('website')} assets={assets} />
+            <Dashboard onBack={() => setView('website')} assets={assets} onAssetsUpdate={refreshAssets} />
           )}
         </motion.div>
       ) : view === 'pendaftaran' ? (
@@ -780,7 +830,7 @@ export default function App() {
           <div className="min-h-screen bg-white font-sans text-slate-900">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-emerald-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -788,79 +838,99 @@ export default function App() {
                 <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-emerald-400 leading-tight">UOBK RSUD AL-MULK</h1>
-                <p className="text-[10px] uppercase tracking-widest text-emerald-700 font-semibold">Kota Sukabumi</p>
+                <h1 className="text-sm md:text-xl font-bold text-emerald-400 leading-tight whitespace-nowrap">UOBK RSUD AL-MULK</h1>
+                <p className="text-[7px] md:text-[10px] uppercase tracking-widest text-emerald-700 font-semibold whitespace-nowrap">Kota Sukabumi</p>
               </div>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-1">
-              <a href="#tentang" className="px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Tentang Kami</a>
-              <a href="#layanan" className="px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Layanan</a>
-              <a href="#dokter" className="px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Dokter</a>
-              <a href="#fasilitas" className="px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Fasilitas</a>
+            <nav className="hidden md:flex items-center space-x-2">
+              <a href="#tentang" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Tentang Kami</a>
+              <a href="#layanan" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Layanan</a>
+              <a href="#dokter" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Dokter</a>
+              <a href="#fasilitas" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Fasilitas</a>
               
               {user.role === 'admin' && (
                 <button 
                   onClick={() => setView('dashboard')}
-                  className="px-4 py-2 rounded-full flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 font-bold transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
+                  className="px-3 lg:px-4 py-2 rounded-full flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 text-sm lg:text-base font-bold transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
                 >
                   <LayoutDashboard size={18} />
-                  <span>Dashboard</span>
+                  <span className="hidden md:inline">Dashboard</span>
                 </button>
               )}
               
               {user.role === 'patient' && (
                 <button 
                   onClick={() => setView('pendaftaran')}
-                  className="px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
+                  className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
                 >
                   Daftar Online
                 </button>
               )}
 
               {/* User Menu */}
-              <div className="relative group ml-2">
-                <button className="px-4 py-2 rounded-full flex items-center space-x-2 text-slate-700 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">
+              <div className="relative ml-2">
+                <button 
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="px-3 lg:px-4 py-2 rounded-full flex items-center space-x-2 text-slate-700 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
+                >
                   {user.foto_profil ? (
                     <img src={user.foto_profil} alt="Profile" className="w-8 h-8 rounded-full object-cover border-2 border-emerald-100" />
                   ) : (
-                    <UserCircle size={24} className="text-emerald-600" />
+                    <UserCircle size={20} className="text-emerald-600 md:w-6 md:h-6" />
                   )}
-                  <span>{user.nama_pasien || 'Admin'}</span>
+                  <span className="hidden md:inline text-sm lg:text-base">{user.nama_pasien || 'Admin'}</span>
+                  <span className="md:hidden text-[10px] font-bold">{user.nama_pasien?.split(' ')[0] || 'Admin'}</span>
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top-right scale-95 group-hover:scale-100">
-                  <div className="p-2 space-y-1">
-                    {user.role === 'patient' && (
-                      <button 
-                        onClick={() => setView('profile')}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg transition-colors flex items-center"
+                
+                <AnimatePresence>
+                  {isUserMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40 bg-black/5" 
+                        onClick={() => setIsUserMenuOpen(false)}
+                      ></div>
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 z-50 overflow-hidden"
                       >
-                        <UserCircle size={16} className="mr-2" /> Profil Saya
-                      </button>
-                    )}
-                    {user.role === 'patient' && (
-                      <button 
-                        onClick={() => setView('riwayat')}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg transition-colors flex items-center"
-                      >
-                        <FileText size={16} className="mr-2" /> Riwayat Pendaftaran
-                      </button>
-                    )}
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center"
-                    >
-                      <LogOut size={16} className="mr-2" /> Keluar
-                    </button>
-                  </div>
-                </div>
+                        <div className="p-2 space-y-1">
+                          {user.role === 'patient' && (
+                            <button 
+                              onClick={() => { setView('profile'); setIsUserMenuOpen(false); }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg transition-colors flex items-center"
+                            >
+                              <UserCircle size={16} className="mr-2" /> Profil Saya
+                            </button>
+                          )}
+                          {user.role === 'patient' && (
+                            <button 
+                              onClick={() => { setView('riwayat'); setIsUserMenuOpen(false); }}
+                              className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 rounded-lg transition-colors flex items-center"
+                            >
+                              <FileText size={16} className="mr-2" /> Riwayat Pendaftaran
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => { handleLogout(); setIsUserMenuOpen(false); }}
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center"
+                          >
+                            <LogOut size={16} className="mr-2" /> Keluar
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             </nav>
 
             {/* Mobile Menu Button */}
             <button 
-              className="lg:hidden p-2 text-slate-600"
+              className="md:hidden p-2 text-slate-600"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -875,7 +945,7 @@ export default function App() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden bg-white border-t border-emerald-50 overflow-hidden"
+              className="md:hidden bg-white border-t border-emerald-50 overflow-hidden"
             >
               <div className="px-4 pt-2 pb-6 space-y-2">
                 <a href="#tentang" onClick={() => setIsMenuOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-700 hover:bg-emerald-50 rounded-lg">Tentang Kami</a>
@@ -929,6 +999,7 @@ export default function App() {
       <main>
         {/* Hero Section */}
         <section className="relative h-[calc(100vh-5rem)] flex items-center overflow-hidden">
+          <ScrollHint />
           <div className="absolute inset-0 z-0">
             <img 
               src={assets.hero_bg || "/rsud-al-mulk.jpg"} 
@@ -939,7 +1010,7 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-emerald-500/10"></div>
           </div>
           
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-start text-left">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col items-start text-left">
             {heroVisible && (
               <>
                 <motion.div 
@@ -951,11 +1022,11 @@ export default function App() {
                   <span className="inline-block px-4 py-1 bg-emerald-500/50 backdrop-blur-md rounded-full text-sm font-semibold mb-6 border border-emerald-400/30">
                     Terakreditasi Paripurna
                   </span>
-                  <h1 className="text-5xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
+                  <h1 className="text-4xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
                     Pelayanan Kesehatan Terbaik
                   </h1>
                   <h2 
-                    className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                    className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
                     style={{ WebkitTextStroke: '1px rgba(52,211,153,0.5)' }}
                   >
                     Untuk Seluruh Lapisan Masyarakat
@@ -995,8 +1066,8 @@ export default function App() {
         </section>
 
         {/* Stats Section */}
-        <section className="py-12 bg-emerald-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section id="next-section" className="py-12 bg-emerald-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div>
                 <p className="text-5xl font-bold text-emerald-700 mb-1">10</p>
@@ -1020,7 +1091,7 @@ export default function App() {
 
         {/* Tentang Kami Section */}
         <section id="tentang" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -1113,7 +1184,7 @@ export default function App() {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
+            className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10"
           >
             <div className="text-center max-w-4xl mx-auto mb-6">
               <h3 className="text-white/80 font-bold uppercase tracking-widest text-sm mb-4">Layanan Kami</h3>
@@ -1347,7 +1418,7 @@ export default function App() {
 
         {/* Fasilitas Section */}
         <section id="fasilitas" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Fasilitas & Teknologi</h3>
@@ -1424,7 +1495,7 @@ export default function App() {
         {/* Booking Section */}
         <section id="booking" className="py-24 bg-emerald-900 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-800/50 skew-x-12 translate-x-1/2"></div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-4xl font-bold mb-6">Pendaftaran Poliklinik Online</h2>
@@ -1490,7 +1561,7 @@ export default function App() {
 
         {/* Dokter Section */}
         <section id="dokter" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
               <div className="max-w-2xl">
                 <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Tim Medis</h3>
@@ -1589,7 +1660,7 @@ export default function App() {
 
         {/* Testimonials Section */}
         <section className="py-24 bg-emerald-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="text-center mb-16">
               <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Testimoni</h3>
               <h2 className="text-4xl font-bold text-slate-900">Apa Kata Pasien Kami?</h2>
@@ -1618,7 +1689,7 @@ export default function App() {
       {/* Footer Logos Section */}
       {footerLogos.length > 0 && (
         <section className="bg-slate-50 py-10 border-t border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
               {footerLogos.filter(logo => logo.gambar_logo).map((logo) => (
                 <a 
@@ -1643,7 +1714,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-slate-900 text-white pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="col-span-1 lg:col-span-1">
                <div className="flex items-center space-x-3">
