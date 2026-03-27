@@ -599,6 +599,8 @@ export default function App() {
     const checkAuth = async () => {
       // Clear session on restart to force login again as requested
       sessionStorage.removeItem('user_session');
+      setUser(null);
+      setShowWelcome(true);
       setIsAuthLoading(false);
     };
     checkAuth();
@@ -848,8 +850,8 @@ export default function App() {
         <motion.div key="website" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <div className="min-h-screen bg-white font-sans text-slate-900">
             {/* Header */}
-            <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-emerald-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+            <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-emerald-100 w-full">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -1028,7 +1030,7 @@ export default function App() {
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-emerald-500/10"></div>
           </div>
           
-          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 flex flex-col items-start text-left">
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-start text-left">
             {heroVisible && (
               <>
                 <motion.div 
@@ -1040,11 +1042,11 @@ export default function App() {
                   <span className="inline-block px-4 py-1 bg-emerald-500/50 backdrop-blur-md rounded-full text-sm font-semibold mb-6 border border-emerald-400/30">
                     Terakreditasi Paripurna
                   </span>
-                  <h1 className="text-4xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
+                  <h1 className="text-5xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
                     Pelayanan Kesehatan Terbaik
                   </h1>
                   <h2 
-                    className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                    className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
                     style={{ WebkitTextStroke: '1px rgba(52,211,153,0.5)' }}
                   >
                     Untuk Seluruh Lapisan Masyarakat
@@ -1085,7 +1087,7 @@ export default function App() {
 
         {/* Stats Section */}
         <section id="next-section" className="py-12 bg-emerald-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               <div>
                 <p className="text-5xl font-bold text-emerald-700 mb-1">10</p>
@@ -1109,7 +1111,7 @@ export default function App() {
 
         {/* Tentang Kami Section */}
         <section id="tentang" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -1202,7 +1204,7 @@ export default function App() {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10"
+            className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
           >
             <div className="text-center max-w-4xl mx-auto mb-6">
               <h3 className="text-white/80 font-bold uppercase tracking-widest text-sm mb-4">Layanan Kami</h3>
@@ -1436,7 +1438,7 @@ export default function App() {
 
         {/* Fasilitas Section */}
         <section id="fasilitas" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Fasilitas & Teknologi</h3>
@@ -1513,7 +1515,7 @@ export default function App() {
         {/* Booking Section */}
         <section id="booking" className="py-24 bg-emerald-900 text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-1/3 h-full bg-emerald-800/50 skew-x-12 translate-x-1/2"></div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-4xl font-bold mb-6">Pendaftaran Poliklinik Online</h2>
@@ -1579,7 +1581,7 @@ export default function App() {
 
         {/* Dokter Section */}
         <section id="dokter" className="py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
               <div className="max-w-2xl">
                 <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Tim Medis</h3>
@@ -1678,7 +1680,7 @@ export default function App() {
 
         {/* Testimonials Section */}
         <section className="py-24 bg-emerald-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Testimoni</h3>
               <h2 className="text-4xl font-bold text-slate-900">Apa Kata Pasien Kami?</h2>
@@ -1707,7 +1709,7 @@ export default function App() {
       {/* Footer Logos Section */}
       {footerLogos.length > 0 && (
         <section className="bg-slate-50 py-10 border-t border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center">
               {footerLogos.filter(logo => logo.gambar_logo).map((logo) => (
                 <a 
@@ -1732,7 +1734,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-slate-900 text-white pt-20 pb-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="col-span-1 lg:col-span-1">
                <div className="flex items-center space-x-3">

@@ -113,7 +113,7 @@ export default function ChartModal({ isOpen, onClose, title, type, data, dataKey
               <div ref={chartRef} className="flex-1 min-h-[450px] w-full bg-white p-4 rounded-xl border border-slate-100">
                 {data.length > 0 ? (
                   <div className="w-full h-[450px]">
-                    <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} debounce={100}>
                       {type === 'bar' ? (
                         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

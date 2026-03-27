@@ -845,13 +845,25 @@ app.post('/api/upload', async (req, res) => {
             // If it's a custom diagnosis, insert it into icd10_codes first
             if (d.id === 'custom' || !d.id) {
               const rawName = (d.name || d.code || 'Custom Diagnosis').trim().replace(/\s+/g, ' ');
-              const diagName = rawName.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
               
+              let parsedCode = `CUST-${Math.floor(Math.random() * 1000000)}`;
+              let parsedName = rawName.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+
+              const dashIndex = rawName.indexOf('-');
+              if (dashIndex > 0) {
+                const potentialCode = rawName.substring(0, dashIndex).trim();
+                const potentialName = rawName.substring(dashIndex + 1).trim();
+                if (potentialCode.length <= 10 && !potentialCode.includes(' ')) {
+                  parsedCode = potentialCode.toUpperCase();
+                  parsedName = potentialName.split(' ').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+                }
+              }
+
               // Check if exists
               const { data: existingDiag } = await supabase
                 .from('icd10_codes')
                 .select('id, code, name')
-                .ilike('name', diagName)
+                .or(`code.eq.${parsedCode},name.ilike.${parsedName}`)
                 .limit(1)
                 .maybeSingle();
 
@@ -861,12 +873,11 @@ app.post('/api/upload', async (req, res) => {
                 d.code = existingDiag.code;
                 d.name = existingDiag.name;
               } else {
-                const customCode = `CUST-${Math.floor(Math.random() * 1000000)}`;
                 const { data: newDiag, error: newDiagError } = await supabase
                   .from('icd10_codes')
                   .insert({
-                    code: customCode,
-                    name: diagName,
+                    code: parsedCode,
+                    name: parsedName,
                     description: 'Manual input'
                   })
                   .select('id, code, name')

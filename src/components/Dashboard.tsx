@@ -34,7 +34,8 @@ import {
   ChevronRight,
   ChevronLeft,
   LogOut,
-  Share2
+  Share2,
+  ListChecks
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Select from 'react-select';
@@ -148,14 +149,37 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
 
     setCallingId(item.id_booking);
 
-    const cleanDoctorName = (name: string) => {
-      return name.replace(/dr\.\s*/gi, '').replace(/,\s*(Sp\.[A-Z]+|Umum|Gigi)/gi, '').trim();
+    // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
+    const formatNomorAntrian = (nomor: string) => {
+      if (!nomor) return '';
+      return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+        if (char === '0') return 'nol';
+        return char;
+      }).join(' ');
     };
 
-    const text = `Nomor antrian ${item.nomor_antrian}, silakan menuju ${item.poli}, dokter ${cleanDoctorName(item.dokter)}`;
+    const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+    
+    // Template Teks Dinamis dengan jeda natural
+    let text = `Nomor Antrian, ${nomorSpelled}, `;
+    if (item.nama_pasien) {
+      text += `${item.nama_pasien}, `;
+    }
+    text += `Silakan Menuju, ${item.poli}.`;
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
-    utterance.rate = 0.9;
+    utterance.rate = 0.85; // Sedikit lebih lambat untuk kesan profesional
+    utterance.pitch = 1.0; // Netral
+    utterance.volume = 1.0;
+    
+    // Pilih suara yang paling natural jika tersedia
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                    voices.find(v => v.lang === 'id-ID');
+    if (idVoice) {
+      utterance.voice = idVoice;
+    }
     
     utterance.onend = () => {
       setCallingId(null);
@@ -445,6 +469,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
             {!isCollapsed && <p className="text-[10px] uppercase tracking-widest text-white/50 font-bold mb-3 ml-3">Menu Utama</p>}
             <ul className="space-y-2">
               <SidebarItem isCollapsed={isCollapsed} icon={<Hospital size={20} />} label="Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} />
+              <SidebarItem isCollapsed={isCollapsed} icon={<ListChecks size={20} />} label="Monitoring Kunjungan Pasien" active={activeTab === 'monitoring'} onClick={() => { setActiveTab('monitoring'); setIsMobileMenuOpen(false); }} />
               <SidebarItem isCollapsed={isCollapsed} icon={<FileText size={20} />} label="Rekam Medis" active={activeTab === 'rekam-medis'} onClick={() => { setActiveTab('rekam-medis'); setIsMobileMenuOpen(false); }} />
               <SidebarItem isCollapsed={isCollapsed} icon={<ClipboardList size={20} />} label="Artikel" active={activeTab === 'artikel'} onClick={() => { setActiveTab('artikel'); setIsMobileMenuOpen(false); }} />
               <SidebarItem isCollapsed={isCollapsed} icon={<Monitor size={20} />} label="Display Antrian" active={activeTab === 'display-tv'} onClick={() => { setActiveTab('display-tv'); setIsMobileMenuOpen(false); }} />
@@ -559,7 +584,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={`bar-${chartRefreshKey}-${activeChartModal}`}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`bar-${chartRefreshKey}-${activeChartModal}`}>
                     <BarChart data={poliChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} interval={0} angle={-45} textAnchor="end" height={60} />
@@ -588,7 +613,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={`pie-${chartRefreshKey}-${activeChartModal}`}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`pie-${chartRefreshKey}-${activeChartModal}`}>
                     <PieChart>
                       <Pie
                         data={doctorChartData}
@@ -624,7 +649,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
                 </button>
               </div>
               <div className="h-64 md:h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={`line-${chartRefreshKey}-${activeChartModal}`}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1} key={`line-${chartRefreshKey}-${activeChartModal}`}>
                   <LineChart data={trendChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="dayName" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
@@ -831,6 +856,8 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
           </>
         ) : activeTab === 'display-tv' ? (
           <DisplayTV />
+        ) : activeTab === 'monitoring' ? (
+          <MonitoringView />
         ) : activeTab === 'rekam-medis' ? (
           <RekamMedisView />
         ) : activeTab === 'pengaturan' ? (
@@ -2731,6 +2758,265 @@ function ArtikelView() {
               {articles.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Belum ada artikel.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function MonitoringView() {
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [search, setSearch] = useState('');
+  const [poliFilter, setPoliFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [callingId, setCallingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getAppointmentsDB();
+        setAppointments(data);
+      } catch (err) {
+        console.error("Failed to fetch appointments:", err);
+      }
+    };
+    fetchData();
+    const interval = setInterval(fetchData, 5000); // 5 seconds polling
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStatusChange = async (item: any, newStatus: string) => {
+    try {
+      await updateAppointmentStatusDB(item.id_booking, newStatus);
+      const data = await getAppointmentsDB();
+      setAppointments(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handlePanggilAntrian = (item: any) => {
+    if (callingId === item.id_booking) {
+      window.speechSynthesis.cancel();
+      setCallingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    
+    if (item.status_antrian !== 'Sedang Dilayani') {
+      handleStatusChange(item, 'Sedang Dilayani');
+    }
+
+    setCallingId(item.id_booking);
+
+    // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
+    const formatNomorAntrian = (nomor: string) => {
+      if (!nomor) return '';
+      return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+        if (char === '0') return 'nol';
+        return char;
+      }).join(' ');
+    };
+
+    const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+    
+    // Template Teks Dinamis dengan jeda natural
+    let text = `Nomor Antrian, ${nomorSpelled}, `;
+    if (item.nama_pasien) {
+      text += `${item.nama_pasien}, `;
+    }
+    text += `Silakan Menuju, ${item.poli}.`;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = 0.85; // Sedikit lebih lambat untuk kesan profesional
+    utterance.pitch = 1.0; // Netral
+    utterance.volume = 1.0;
+    
+    // Pilih suara yang paling natural jika tersedia
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                    voices.find(v => v.lang === 'id-ID');
+    if (idVoice) {
+      utterance.voice = idVoice;
+    }
+    
+    utterance.onend = () => setCallingId(null);
+    utterance.onerror = () => setCallingId(null);
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const filteredAppointments = appointments.filter((a: any) => {
+    const searchLower = search.toLowerCase();
+    const matchSearch = !search || 
+      a.nama_pasien?.toLowerCase().includes(searchLower) ||
+      a.nomor_antrian?.toLowerCase().includes(searchLower);
+    
+    const matchPoli = !poliFilter || a.poli === poliFilter;
+    const matchStatus = !statusFilter || a.status_antrian === statusFilter;
+
+    return matchSearch && matchPoli && matchStatus;
+  }).sort((a: any, b: any) => {
+    if (sortOrder === 'asc') {
+      return a.nomor_antrian?.localeCompare(b.nomor_antrian);
+    } else {
+      return b.nomor_antrian?.localeCompare(a.nomor_antrian);
+    }
+  });
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status) {
+      case 'Menunggu': return 'bg-slate-100 text-slate-600';
+      case 'Sedang Dilayani': return 'bg-blue-100 text-blue-700';
+      case 'Selesai': return 'bg-emerald-100 text-emerald-700';
+      case 'Dibatalkan': return 'bg-red-100 text-red-700';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  };
+
+  const uniquePolis = Array.from(new Set(appointments.map(a => a.poli).filter(Boolean)));
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900">Monitoring Kunjungan Pasien</h2>
+          <p className="text-slate-500 mt-1">Kelola dan pantau status antrian pasien secara real-time</p>
+        </div>
+        <div className="flex items-center text-sm text-emerald-600 font-bold bg-emerald-50 px-4 py-2 rounded-full">
+          <span className="relative flex h-2.5 w-2.5 mr-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          Live Sync Active
+        </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Cari nama pasien atau no antrian..." 
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <select 
+          className="px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium text-slate-700"
+          value={poliFilter}
+          onChange={e => setPoliFilter(e.target.value)}
+        >
+          <option value="">Semua Poli</option>
+          {uniquePolis.map((poli: any) => (
+            <option key={poli} value={poli}>{poli}</option>
+          ))}
+        </select>
+        <select 
+          className="px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium text-slate-700"
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+        >
+          <option value="">Semua Status</option>
+          <option value="Menunggu">Menunggu</option>
+          <option value="Sedang Dilayani">Sedang Dilayani</option>
+          <option value="Selesai">Selesai</option>
+          <option value="Dibatalkan">Dibatalkan</option>
+        </select>
+        <button 
+          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+          className="px-4 py-2.5 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 transition-colors text-sm font-medium flex items-center gap-2"
+        >
+          Urutkan {sortOrder === 'asc' ? '↓' : '↑'}
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
+              <tr>
+                <th className="px-6 py-4">No Antrian</th>
+                <th className="px-6 py-4">Nama Pasien</th>
+                <th className="px-6 py-4">Poli & Dokter</th>
+                <th className="px-6 py-4">Jam Kunjungan</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredAppointments.map((item: any) => (
+                <tr key={item.id_booking} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <span className="font-bold text-lg text-emerald-700">{item.nomor_antrian || '-'}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="font-bold text-slate-900">{item.nama_pasien || 'Pasien'}</p>
+                    <p className="text-xs text-slate-500 mt-1">ID: {item.id_booking}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className="font-bold text-slate-800">{item.poli}</p>
+                    <p className="text-xs text-slate-500 mt-1">{item.dokter}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center text-slate-600 font-medium">
+                      <Clock size={14} className="mr-2 text-slate-400" />
+                      {item.time || '-'}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{item.tanggal_kunjungan}</p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={item.status_antrian || 'Menunggu'}
+                      onChange={(e) => handleStatusChange(item, e.target.value)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border-none outline-none cursor-pointer appearance-none pr-8 relative ${getStatusBadgeColor(item.status_antrian || 'Menunggu')}`}
+                      style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.5rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.5em 1.5em' }}
+                    >
+                      <option value="Menunggu">Menunggu</option>
+                      <option value="Sedang Dilayani">Sedang Dilayani</option>
+                      <option value="Selesai">Selesai</option>
+                      <option value="Dibatalkan">Dibatalkan</option>
+                    </select>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    <button
+                      onClick={() => handlePanggilAntrian(item)}
+                      className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center justify-center gap-2 mx-auto transition-all ${
+                        callingId === item.id_booking 
+                          ? 'bg-amber-100 text-amber-700 animate-pulse' 
+                          : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                      }`}
+                    >
+                      {callingId === item.id_booking ? (
+                        <><Volume2 size={16} className="animate-bounce" /> Memanggil...</>
+                      ) : (
+                        <><Volume size={16} /> Panggil Pasien</>
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredAppointments.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <Activity size={48} className="text-slate-300 mb-4" />
+                      <p className="text-lg font-medium">Tidak ada data kunjungan</p>
+                      <p className="text-sm mt-1">Coba ubah filter pencarian Anda</p>
+                    </div>
+                  </td>
                 </tr>
               )}
             </tbody>
