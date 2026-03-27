@@ -152,15 +152,18 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
     // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
     const formatNomorAntrian = (nomor: string) => {
       if (!nomor) return '';
+      const digitMap: { [key: string]: string } = {
+        '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+        '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+      };
       return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
-        if (char === '0') return 'nol';
-        return char;
+        return digitMap[char] || char;
       }).join(' ');
     };
 
     const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
     
-    // Template Teks Dinamis dengan jeda natural
+    // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
     let text = `Nomor Antrian, ${nomorSpelled}, `;
     if (item.nama_pasien) {
       text += `${item.nama_pasien}, `;
@@ -169,7 +172,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
-    utterance.rate = 0.85; // Sedikit lebih lambat untuk kesan profesional
+    utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
     utterance.pitch = 1.0; // Netral
     utterance.volume = 1.0;
     
@@ -2818,15 +2821,18 @@ function MonitoringView() {
     // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
     const formatNomorAntrian = (nomor: string) => {
       if (!nomor) return '';
+      const digitMap: { [key: string]: string } = {
+        '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+        '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+      };
       return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
-        if (char === '0') return 'nol';
-        return char;
+        return digitMap[char] || char;
       }).join(' ');
     };
 
     const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
     
-    // Template Teks Dinamis dengan jeda natural
+    // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
     let text = `Nomor Antrian, ${nomorSpelled}, `;
     if (item.nama_pasien) {
       text += `${item.nama_pasien}, `;
@@ -2835,7 +2841,7 @@ function MonitoringView() {
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
-    utterance.rate = 0.85; // Sedikit lebih lambat untuk kesan profesional
+    utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
     utterance.pitch = 1.0; // Netral
     utterance.volume = 1.0;
     

@@ -316,7 +316,11 @@ app.post('/api/upload', async (req, res) => {
           const { password: _, ...userWithoutPassword } = user;
           return res.json({ 
             success: true, 
-            user: { ...userWithoutPassword, role: 'patient' }
+            user: { 
+              ...userWithoutPassword, 
+              role: 'patient',
+              isProfileComplete: !!(user.nama_pasien && user.nik && user.tanggal_lahir && user.alamat)
+            }
           });
         }
         return res.status(401).json({ error: 'Email atau password salah' });
@@ -339,7 +343,13 @@ app.post('/api/upload', async (req, res) => {
         return res.status(404).json({ error: 'User not found' });
       }
       const { password: _, ...userWithoutPassword } = user;
-      res.json({ success: true, user: userWithoutPassword });
+      res.json({ 
+        success: true, 
+        user: {
+          ...userWithoutPassword,
+          isProfileComplete: !!(user.nama_pasien && user.nik && user.tanggal_lahir && user.alamat)
+        }
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
@@ -349,7 +359,7 @@ app.post('/api/upload', async (req, res) => {
     try {
       const { id, nama_pasien, nik, tanggal_lahir, alamat, no_hp, email, no_bpjs, foto_profil, jenis_kelamin } = req.body;
       
-      if (!email || !email.includes('@')) {
+      if (email && !email.includes('@')) {
         return res.status(400).json({ error: 'Email tidak valid' });
       }
       if (!no_hp || !/^\d+$/.test(no_hp)) {
@@ -373,7 +383,7 @@ app.post('/api/upload', async (req, res) => {
           tanggal_lahir,
           alamat,
           no_hp,
-          email,
+          email: email || null,
           nomor_bpjs: no_bpjs,
           foto_profil: foto_profil || undefined,
           jenis_kelamin
@@ -391,7 +401,13 @@ app.post('/api/upload', async (req, res) => {
       if (fetchError) throw fetchError;
       const { password: _, ...userWithoutPassword } = updatedUser as any;
       
-      res.json({ success: true, user: { ...userWithoutPassword } });
+      res.json({ 
+        success: true, 
+        user: { 
+          ...userWithoutPassword,
+          isProfileComplete: !!(updatedUser.nama_pasien && updatedUser.nik && updatedUser.tanggal_lahir && updatedUser.alamat)
+        } 
+      });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

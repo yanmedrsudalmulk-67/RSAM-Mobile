@@ -99,6 +99,12 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
   const [doctorsList, setDoctorsList] = useState<any[]>([]);
 
   useEffect(() => {
+    if (user && !user.isProfileComplete) {
+      setActiveTab('profile');
+    }
+  }, [user]);
+
+  useEffect(() => {
     const fetchMasterData = async () => {
       const [poli, jadwal, docs] = await Promise.all([
         getPoliklinikDB(),
@@ -205,10 +211,31 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
 
     setCallingId(item.id_booking);
 
-    const text = `Nomor antrian ${item.nomor_antrian}, silakan menuju ${item.poli}, dokter ${item.dokter.replace('dr. ', '')}`;
+    // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
+    const formatNomorAntrian = (nomor: string) => {
+      if (!nomor) return '';
+      const digitMap: { [key: string]: string } = {
+        '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+        '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+      };
+      return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+        return digitMap[char] || char;
+      }).join(' ');
+    };
+
+    const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+    const text = `Nomor antrian, ${nomorSpelled}, silakan menuju, ${item.poli}, dokter, ${item.dokter.replace('dr. ', '')}`;
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
-    utterance.rate = 0.9;
+    utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
+    
+    // Pilih suara yang paling natural jika tersedia
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                    voices.find(v => v.lang === 'id-ID');
+    if (idVoice) {
+      utterance.voice = idVoice;
+    }
     
     utterance.onend = () => {
       setCallingId(null);
@@ -253,7 +280,13 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
             {menuItems.map(item => (
               <li key={item.id}>
                 <button
-                  onClick={() => setActiveTab(item.id as any)}
+                  onClick={() => {
+                    if (user && !user.isProfileComplete && item.id !== 'profile') {
+                      alert('Silakan lengkapi profil Anda terlebih dahulu.');
+                      return;
+                    }
+                    setActiveTab(item.id as any);
+                  }}
                   className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all ${
                     activeTab === item.id ? 'bg-emerald-800 text-white font-bold shadow-inner' : 'text-emerald-100 hover:bg-emerald-800/50 hover:text-white'
                   }`}
@@ -349,28 +382,52 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-40 pb-safe">
         <div className="flex justify-around items-center h-16 px-2">
           <button 
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => {
+              if (user && !user.isProfileComplete) {
+                alert('Silakan lengkapi profil Anda terlebih dahulu.');
+                return;
+              }
+              setActiveTab('dashboard');
+            }}
             className={`flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors ${activeTab === 'dashboard' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <LayoutDashboard size={24} className={activeTab === 'dashboard' ? 'fill-emerald-50' : ''} />
             <span className="text-[10px] font-medium">Beranda</span>
           </button>
           <button 
-            onClick={() => setActiveTab('buat-janji')}
+            onClick={() => {
+              if (user && !user.isProfileComplete) {
+                alert('Silakan lengkapi profil Anda terlebih dahulu.');
+                return;
+              }
+              setActiveTab('buat-janji');
+            }}
             className={`flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors ${activeTab === 'buat-janji' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Calendar size={24} className={activeTab === 'buat-janji' ? 'fill-emerald-50' : ''} />
             <span className="text-[10px] font-medium">Daftar Online</span>
           </button>
           <button 
-            onClick={() => setActiveTab('cek-antrian')}
+            onClick={() => {
+              if (user && !user.isProfileComplete) {
+                alert('Silakan lengkapi profil Anda terlebih dahulu.');
+                return;
+              }
+              setActiveTab('cek-antrian');
+            }}
             className={`flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors ${activeTab === 'cek-antrian' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <Activity size={24} className={activeTab === 'cek-antrian' ? 'fill-emerald-50' : ''} />
             <span className="text-[10px] font-medium">Antrian</span>
           </button>
           <button 
-            onClick={() => setActiveTab('rekam-medis')}
+            onClick={() => {
+              if (user && !user.isProfileComplete) {
+                alert('Silakan lengkapi profil Anda terlebih dahulu.');
+                return;
+              }
+              setActiveTab('rekam-medis');
+            }}
             className={`flex flex-col items-center justify-center w-16 h-full space-y-1 transition-colors ${activeTab === 'rekam-medis' ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
           >
             <FileText size={24} className={activeTab === 'rekam-medis' ? 'fill-emerald-50' : ''} />
@@ -1981,9 +2038,32 @@ function CekAntrian({ appointments, allAppointments, onRefresh }: { appointments
 
     currentlyServing.forEach(app => {
       if (!prevServingRef.current.has(app.id_booking)) {
-        const text = `Nomor antrian ${app.nomor_antrian}, silakan menuju ${app.poli}, dokter ${app.dokter.replace('dr. ', 'dokter ')}`;
+        // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
+        const formatNomorAntrian = (nomor: string) => {
+          if (!nomor) return '';
+          const digitMap: { [key: string]: string } = {
+            '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+            '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+          };
+          return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+            return digitMap[char] || char;
+          }).join(' ');
+        };
+
+        const nomorSpelled = formatNomorAntrian(app.nomor_antrian);
+        const text = `Nomor antrian, ${nomorSpelled}, silakan menuju, ${app.poli}, dokter, ${app.dokter.replace('dr. ', 'dokter ')}`;
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'id-ID';
+        utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
+        
+        // Pilih suara yang paling natural jika tersedia
+        const voices = window.speechSynthesis.getVoices();
+        const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                        voices.find(v => v.lang === 'id-ID');
+        if (idVoice) {
+          utterance.voice = idVoice;
+        }
+
         window.speechSynthesis.speak(utterance);
       }
     });

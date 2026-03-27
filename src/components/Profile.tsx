@@ -263,14 +263,13 @@ export default function Profile({ user, onUpdate, onBack }: ProfileProps) {
 
                   <div className="pt-2">
                     <FloatingInput
-                      label="Email"
+                      label="Email (Opsional)"
                       type="email"
-                      required
                       disabled={!isEditing}
                       icon={<Mail size={18} />}
                       value={formData.email}
                       onChange={e => setFormData({...formData, email: e.target.value})}
-                      validationFn={(val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)}
+                      validationFn={(val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)}
                       errorMessage="Format email salah"
                     />
                   </div>

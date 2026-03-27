@@ -5,12 +5,12 @@ import { FloatingInput } from './FloatingInput';
 
 interface LoginProps {
   onLogin: (user: any) => void;
+  assets?: Record<string, string>;
 }
 
-export default function Login({ onLogin }: LoginProps) {
+export default function Login({ onLogin, assets = {} }: LoginProps) {
   const [activeTab, setActiveTab] = useState<'admin' | 'patient'>('patient');
   const [view, setView] = useState<'login' | 'register'>('login');
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone' | 'otp'>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,11 +21,6 @@ export default function Login({ onLogin }: LoginProps) {
     email: '',
     password: '',
     username: '' // For admin
-  });
-
-  const [phoneForm, setPhoneForm] = useState({
-    phone: '',
-    otp: ''
   });
 
   // Register Form State
@@ -66,41 +61,6 @@ export default function Login({ onLogin }: LoginProps) {
     }
   };
 
-  const handleSendOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (phoneForm.phone.length < 10) {
-      setError('Nomor HP tidak valid');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    // Mock sending OTP
-    setTimeout(() => {
-      setLoading(false);
-      setLoginMethod('otp');
-    }, 1500);
-  };
-
-  const handleVerifyOTP = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (phoneForm.otp.length !== 6) {
-      setError('Kode OTP harus 6 digit');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    // Mock verify OTP
-    setTimeout(() => {
-      setLoading(false);
-      onLogin({
-        id: 2,
-        nama: 'Pasien (OTP)',
-        role: 'patient',
-        email: 'pasien@example.com'
-      });
-    }, 1500);
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -134,11 +94,14 @@ export default function Login({ onLogin }: LoginProps) {
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-slate-50 font-sans overflow-hidden">
       {/* Mobile Header */}
       <div className="lg:hidden relative h-[160px] bg-gradient-to-br from-emerald-900 to-emerald-500 text-white rounded-b-[32px] shadow-lg flex-shrink-0">
-        <div className="absolute inset-0 opacity-20 bg-[url('rsud-al-mulk.jpg')] bg-cover bg-center mix-blend-overlay rounded-b-[32px]"></div>
+        <div 
+          className="absolute inset-0 opacity-20 bg-cover bg-center mix-blend-overlay rounded-b-[32px]"
+          style={{ backgroundImage: `url(${assets.login_bg || 'rsud-al-mulk.jpg'})` }}
+        ></div>
         <div className="relative z-10 flex flex-col items-center justify-center h-full pt-2">
           <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
             <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center p-1 shadow-md mb-2 border-2 border-emerald-100/20">
-              <img src="/logo-1.jpg" alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="text-xl font-bold leading-tight text-white">
@@ -153,7 +116,7 @@ export default function Login({ onLogin }: LoginProps) {
       {/* Desktop Left Side */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-emerald-900 overflow-hidden">
         <img 
-          src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop" 
+          src={assets.login_bg || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=2053&auto=format&fit=crop"} 
           alt="Hospital Facility" 
           className="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-overlay"
         />
@@ -165,7 +128,7 @@ export default function Login({ onLogin }: LoginProps) {
             transition={{ delay: 0.2 }}
           >
             <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-8 shadow-xl border-4 border-emerald-100/20">
-              <img src="/logo-1.jpg" alt="Logo" className="w-16 h-16 object-contain rounded-2xl" />
+              <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-16 h-16 object-contain rounded-2xl" />
             </div>
             <h1 className="text-5xl font-bold mb-6 leading-tight">
               Selamat Datang di<br/>UOBK RSUD AL-MULK
@@ -203,7 +166,7 @@ export default function Login({ onLogin }: LoginProps) {
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                   <button
-                    onClick={() => { setActiveTab('patient'); setLoginMethod('email'); setError(''); }}
+                    onClick={() => { setActiveTab('patient'); setError(''); }}
                     className={`relative z-10 flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${
                       activeTab === 'patient' ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-700'
                     }`}
@@ -211,7 +174,7 @@ export default function Login({ onLogin }: LoginProps) {
                     Pasien
                   </button>
                   <button
-                    onClick={() => { setActiveTab('admin'); setLoginMethod('email'); setError(''); }}
+                    onClick={() => { setActiveTab('admin'); setError(''); }}
                     className={`relative z-10 flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${
                       activeTab === 'admin' ? 'text-emerald-600' : 'text-slate-500 hover:text-slate-700'
                     }`}
@@ -232,7 +195,6 @@ export default function Login({ onLogin }: LoginProps) {
                 )}
 
                 <AnimatePresence mode="wait">
-                  {loginMethod === 'email' && (
                     <motion.form 
                       key="email-form"
                       initial={{ opacity: 0, x: -20 }}
@@ -309,116 +271,10 @@ export default function Login({ onLogin }: LoginProps) {
                         </span>
                         <div className="absolute inset-0 h-full w-full bg-white/20 scale-0 group-active:scale-100 rounded-[16px] transition-transform duration-300 origin-center opacity-0 group-active:opacity-100"></div>
                       </button>
-
-                      {activeTab === 'patient' && (
-                        <div className="pt-3 text-center">
-                          <div className="relative flex items-center py-2 mb-2">
-                            <div className="flex-grow border-t border-slate-200"></div>
-                            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-semibold">ATAU</span>
-                            <div className="flex-grow border-t border-slate-200"></div>
-                          </div>
-                          <button 
-                            type="button" 
-                            onClick={() => setLoginMethod('phone')} 
-                            className="w-full py-3 rounded-[16px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Phone size={18} />
-                            Login dengan Nomor HP
-                          </button>
-                        </div>
-                      )}
                     </motion.form>
-                  )}
-
-                  {loginMethod === 'phone' && (
-                    <motion.form 
-                      key="phone-form"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      onSubmit={handleSendOTP} 
-                      className="space-y-4"
-                    >
-                      <FloatingInput
-                        label="Nomor HP"
-                        type="tel"
-                        required
-                        icon={<Phone size={20} />}
-                        value={phoneForm.phone}
-                        onChange={e => setPhoneForm({...phoneForm, phone: e.target.value.replace(/\D/g, '')})}
-                        validationFn={(val) => val.length >= 10}
-                        errorMessage="Nomor HP tidak valid"
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-3.5 rounded-[16px] font-bold shadow-md hover:shadow-lg transition-all relative overflow-hidden group disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-                      >
-                        <span className="relative z-10 flex items-center justify-center gap-2">
-                          {loading ? 'Mengirim...' : 'Kirim Kode OTP'}
-                          {!loading && <ArrowRight size={18} />}
-                        </span>
-                        <div className="absolute inset-0 h-full w-full bg-white/20 scale-0 group-active:scale-100 rounded-[16px] transition-transform duration-300 origin-center opacity-0 group-active:opacity-100"></div>
-                      </button>
-                      <div className="pt-4 text-center">
-                        <button 
-                          type="button" 
-                          onClick={() => setLoginMethod('email')} 
-                          className="text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors"
-                        >
-                          Kembali ke Login Email
-                        </button>
-                      </div>
-                    </motion.form>
-                  )}
-
-                  {loginMethod === 'otp' && (
-                    <motion.form 
-                      key="otp-form"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      onSubmit={handleVerifyOTP} 
-                      className="space-y-4"
-                    >
-                      <div className="text-center mb-6">
-                        <p className="text-sm text-slate-600">Kode OTP telah dikirim ke <br/><span className="font-bold text-slate-900">{phoneForm.phone}</span></p>
-                      </div>
-                      <FloatingInput
-                        label="Kode OTP (6 Digit)"
-                        type="text"
-                        required
-                        maxLength={6}
-                        icon={<Lock size={20} />}
-                        value={phoneForm.otp}
-                        onChange={e => setPhoneForm({...phoneForm, otp: e.target.value.replace(/\D/g, '')})}
-                        className="text-center tracking-widest text-lg font-bold"
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-3.5 rounded-[16px] font-bold shadow-md hover:shadow-lg transition-all relative overflow-hidden group disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-                      >
-                        <span className="relative z-10 flex items-center justify-center gap-2">
-                          {loading ? 'Memverifikasi...' : 'Verifikasi & Login'}
-                          {!loading && <CheckCircle2 size={18} />}
-                        </span>
-                        <div className="absolute inset-0 h-full w-full bg-white/20 scale-0 group-active:scale-100 rounded-[16px] transition-transform duration-300 origin-center opacity-0 group-active:opacity-100"></div>
-                      </button>
-                      <div className="pt-4 text-center">
-                        <button 
-                          type="button" 
-                          onClick={() => setLoginMethod('phone')} 
-                          className="text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors"
-                        >
-                          Ganti Nomor HP
-                        </button>
-                      </div>
-                    </motion.form>
-                  )}
                 </AnimatePresence>
 
-                {activeTab === 'patient' && loginMethod === 'email' && (
+                {activeTab === 'patient' && (
                   <div className="mt-6 text-center">
                     <p className="text-sm text-slate-500">
                       Belum memiliki akun?{' '}

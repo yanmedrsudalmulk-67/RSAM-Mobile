@@ -41,7 +41,7 @@ import { SERVICES, TESTIMONIALS, DOCTORS } from './constants';
 import { getJadwalDokterDB, getDokterDB } from './db';
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const PendaftaranOnline = lazy(() => import('./components/PendaftaranOnline'));
-const Login = lazy(() => import('./components/LoginComponent'));
+const Login = lazy(() => import('./components/Login'));
 const Profile = lazy(() => import('./components/Profile'));
 const WelcomeScreen = lazy(() => import('./components/WelcomeScreen'));
 const DaftarDokter = lazy(() => import('./components/DaftarDokter'));

@@ -45,11 +45,33 @@ export default function DisplayAntrian() {
   const playVoiceCall = (appointment: any) => {
     if (!audioEnabled) return;
     if ('speechSynthesis' in window) {
-      const text = `Nomor antrian ${appointment.nomor_antrian}, silakan menuju ${appointment.poli}, dokter ${appointment.dokter}.`;
+      // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
+      const formatNomorAntrian = (nomor: string) => {
+        if (!nomor) return '';
+        const digitMap: { [key: string]: string } = {
+          '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+          '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+        };
+        return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+          return digitMap[char] || char;
+        }).join(' ');
+      };
+
+      const nomorSpelled = formatNomorAntrian(appointment.nomor_antrian);
+      const text = `Nomor antrian, ${nomorSpelled}, silakan menuju, ${appointment.poli}, dokter, ${appointment.dokter}.`;
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
-      utterance.rate = 0.85; // Slightly slower for clarity
+      utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
       utterance.pitch = 1;
+      
+      // Pilih suara yang paling natural jika tersedia
+      const voices = window.speechSynthesis.getVoices();
+      const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                      voices.find(v => v.lang === 'id-ID');
+      if (idVoice) {
+        utterance.voice = idVoice;
+      }
+
       window.speechSynthesis.speak(utterance);
     }
   };
