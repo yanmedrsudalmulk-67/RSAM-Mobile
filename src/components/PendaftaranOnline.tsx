@@ -2048,52 +2048,11 @@ function CekAntrian({ appointments, allAppointments, onRefresh }: { appointments
   }, [appointments]);
 
   useEffect(() => {
-    const currentlyServing = allAppointments.filter(a => a.status_antrian === 'Sedang Dilayani');
-    const currentServingIds = new Set(currentlyServing.map(a => a.id_booking));
+    // Automatic TTS trigger removed to comply with WebView autoplay restrictions
+    // and prevent blank screen issues.
+    prevServingRef.current = new Set(allAppointments.filter(a => a.status_antrian === 'Sedang Dilayani').map(a => a.id_booking));
+  }, []); // Only run once on mount to initialize the ref
 
-    currentlyServing.forEach(app => {
-      if (!prevServingRef.current.has(app.id_booking)) {
-        // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
-        const formatNomorAntrian = (nomor: string) => {
-          if (!nomor) return '';
-          const digitMap: { [key: string]: string } = {
-            '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
-            '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
-          };
-          return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
-            return digitMap[char] || char;
-          }).join(' ');
-        };
-
-        const nomorSpelled = formatNomorAntrian(app.nomor_antrian);
-        
-        // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
-        let text = `Nomor Antrian, ${nomorSpelled}, `;
-        if (app.nama_pasien) {
-          text += `${app.nama_pasien}, `;
-        }
-        text += `Silakan Menuju, ${app.poli}.`;
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'id-ID';
-        utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
-        
-        // Pilih suara yang paling natural jika tersedia
-        if (window.speechSynthesis) {
-          const voices = window.speechSynthesis.getVoices();
-          const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
-                          voices.find(v => v.lang === 'id-ID');
-          if (idVoice) {
-            utterance.voice = idVoice;
-          }
-
-          window.speechSynthesis.speak(utterance);
-        }
-      }
-    });
-
-    prevServingRef.current = currentServingIds;
-  }, [allAppointments]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
