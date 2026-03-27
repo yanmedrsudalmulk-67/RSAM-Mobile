@@ -830,7 +830,7 @@ export default function App() {
           <div className="min-h-screen bg-white font-sans text-slate-900">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-emerald-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <div className="max-w-8xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -838,8 +838,8 @@ export default function App() {
                 <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="text-sm md:text-xl font-bold text-emerald-400 leading-tight whitespace-nowrap">UOBK RSUD AL-MULK</h1>
-                <p className="text-[7px] md:text-[10px] uppercase tracking-widest text-emerald-700 font-semibold whitespace-nowrap">Kota Sukabumi</p>
+                <h1 className="text-xl font-bold text-emerald-400 leading-tight">UOBK RSUD AL-MULK</h1>
+                <p className="text-[10px] uppercase tracking-widest text-emerald-700 font-semibold">Kota Sukabumi</p>
               </div>
             </div>
 
@@ -1022,11 +1022,11 @@ export default function App() {
                   <span className="inline-block px-4 py-1 bg-emerald-500/50 backdrop-blur-md rounded-full text-sm font-semibold mb-6 border border-emerald-400/30">
                     Terakreditasi Paripurna
                   </span>
-                  <h1 className="text-4xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
+                  <h1 className="text-5xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
                     Pelayanan Kesehatan Terbaik
                   </h1>
                   <h2 
-                    className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                    className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
                     style={{ WebkitTextStroke: '1px rgba(52,211,153,0.5)' }}
                   >
                     Untuk Seluruh Lapisan Masyarakat
