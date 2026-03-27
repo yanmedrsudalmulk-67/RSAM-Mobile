@@ -851,7 +851,7 @@ export default function App() {
           <div className="min-h-screen bg-white font-sans text-slate-900">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-emerald-100 w-full">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -1160,7 +1160,7 @@ export default function App() {
 
               <div>
                 <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Tentang Kami</h3>
-                <h2 className="text-3xl font-bold text-slate-900 mb-6 leading-tight">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">
                   Sejarah                        
                   UOBK RSUD AL-MULK
                 </h2>
