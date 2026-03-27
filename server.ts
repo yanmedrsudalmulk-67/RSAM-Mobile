@@ -564,19 +564,40 @@ app.post('/api/upload', async (req, res) => {
   });
 
   app.get('/api/appointments', async (req, res) => {
+    console.log('GET /api/appointments called');
     try {
       const { data: appointments, error } = await supabase
         .from('booking_kunjungan')
         .select('*')
         .order('waktu_booking', { ascending: false });
 
-      if (error) throw error;
-      res.json(appointments.map((a: any) => ({
-        ...a,
-        jenis_vaksin: a.jenis_vaksin ? (typeof a.jenis_vaksin === 'string' ? JSON.parse(a.jenis_vaksin) : a.jenis_vaksin) : []
-      })));
+      if (error) {
+        console.error('Supabase error fetching appointments:', error);
+        throw error;
+      }
+      
+      console.log(`Found ${appointments?.length || 0} appointments`);
+      
+      const mappedData = (appointments || []).map((a: any) => {
+        let parsedVaksin = [];
+        if (a.jenis_vaksin) {
+          try {
+            parsedVaksin = typeof a.jenis_vaksin === 'string' ? JSON.parse(a.jenis_vaksin) : a.jenis_vaksin;
+          } catch (e) {
+            console.error('Error parsing jenis_vaksin for appointment', a.id_booking, e);
+            parsedVaksin = [];
+          }
+        }
+        return {
+          ...a,
+          jenis_vaksin: parsedVaksin
+        };
+      });
+      
+      res.json(mappedData);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      console.error('Error fetching appointments:', error);
+      res.status(500).json({ error: error.message || 'Internal Server Error' });
     }
   });
 

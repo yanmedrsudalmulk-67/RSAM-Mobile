@@ -272,6 +272,7 @@ export default function App() {
   const { assets, loading: assetsLoading, refresh: refreshAssets } = useSiteAssets();
   const [view, setView] = useState<'website' | 'dashboard' | 'pendaftaran' | 'profile' | 'riwayat' | 'daftar-dokter'>('website');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<any | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [serviceImages, setServiceImages] = useState<any[]>([]);
@@ -282,7 +283,25 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showScrollArrow, setShowScrollArrow] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const fullHeight = document.documentElement.scrollHeight;
+      
+      // Hide if scrolled more than 30% of the viewport or near bottom
+      if (scrollY > windowHeight * 0.3) {
+        setShowScrollArrow(false);
+      } else {
+        setShowScrollArrow(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleGetStarted = () => {
     setShowWelcome(false);
@@ -830,7 +849,7 @@ export default function App() {
           <div className="min-h-screen bg-white font-sans text-slate-900">
             {/* Header */}
             <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-emerald-100">
-        <div className="max-w-8xl mx-auto px-4 sm:px-6 md:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex items-center space-x-3">
@@ -838,50 +857,49 @@ export default function App() {
                 <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-emerald-400 leading-tight">UOBK RSUD AL-MULK</h1>
-                <p className="text-[10px] uppercase tracking-widest text-emerald-700 font-semibold">Kota Sukabumi</p>
+                <h1 className="text-sm md:text-xl font-bold text-emerald-400 leading-tight whitespace-nowrap">UOBK RSUD AL-MULK</h1>
+                <p className="text-[7px] md:text-[10px] uppercase tracking-widest text-emerald-700 font-semibold whitespace-nowrap">Kota Sukabumi</p>
               </div>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-2">
-              <a href="#tentang" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Tentang Kami</a>
-              <a href="#layanan" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Layanan</a>
-              <a href="#dokter" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Dokter</a>
-              <a href="#fasilitas" className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Fasilitas</a>
+            <nav className="hidden sm:flex items-center space-x-1 lg:space-x-2">
+              <a href="#tentang" className="px-2 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-xs lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Tentang Kami</a>
+              <a href="#layanan" className="px-2 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-xs lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Layanan</a>
+              <a href="#dokter" className="px-2 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-xs lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Dokter</a>
+              <a href="#fasilitas" className="px-2 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-xs lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]">Fasilitas</a>
               
               {user.role === 'admin' && (
                 <button 
                   onClick={() => setView('dashboard')}
-                  className="px-3 lg:px-4 py-2 rounded-full flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 text-sm lg:text-base font-bold transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
+                  className="px-2 lg:px-4 py-2 rounded-full flex items-center space-x-2 text-emerald-600 hover:text-emerald-700 text-xs lg:text-base font-bold transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
                 >
                   <LayoutDashboard size={18} />
-                  <span className="hidden md:inline">Dashboard</span>
+                  <span className="hidden lg:inline">Dashboard</span>
                 </button>
               )}
               
               {user.role === 'patient' && (
                 <button 
                   onClick={() => setView('pendaftaran')}
-                  className="px-3 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-sm lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
+                  className="px-2 lg:px-4 py-2 rounded-full text-slate-600 hover:text-emerald-600 text-xs lg:text-base font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
                 >
                   Daftar Online
                 </button>
               )}
 
               {/* User Menu */}
-              <div className="relative ml-2">
+              <div className="relative ml-1 lg:ml-2">
                 <button 
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="px-3 lg:px-4 py-2 rounded-full flex items-center space-x-2 text-slate-700 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
+                  className="px-2 lg:px-4 py-2 rounded-full flex items-center space-x-1 lg:space-x-2 text-slate-700 hover:text-emerald-600 font-medium transition-all duration-300 hover:bg-emerald-50/40 hover:backdrop-blur-lg border border-transparent hover:border-emerald-200/50 hover:shadow-[0_8px_32px_0_rgba(16,185,129,0.1)]"
                 >
                   {user.foto_profil ? (
-                    <img src={user.foto_profil} alt="Profile" className="w-8 h-8 rounded-full object-cover border-2 border-emerald-100" />
+                    <img src={user.foto_profil} alt="Profile" className="w-6 h-6 lg:w-8 lg:h-8 rounded-full object-cover border-2 border-emerald-100" />
                   ) : (
-                    <UserCircle size={20} className="text-emerald-600 md:w-6 md:h-6" />
+                    <UserCircle size={18} className="text-emerald-600 lg:w-6 lg:h-6" />
                   )}
-                  <span className="hidden md:inline text-sm lg:text-base">{user.nama_pasien || 'Admin'}</span>
-                  <span className="md:hidden text-[10px] font-bold">{user.nama_pasien?.split(' ')[0] || 'Admin'}</span>
+                  <span className="hidden sm:inline text-xs lg:text-base">{user.nama_pasien || 'Admin'}</span>
                 </button>
                 
                 <AnimatePresence>
@@ -930,7 +948,7 @@ export default function App() {
 
             {/* Mobile Menu Button */}
             <button 
-              className="md:hidden p-2 text-slate-600"
+              className="sm:hidden p-2 text-slate-600"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -1022,11 +1040,11 @@ export default function App() {
                   <span className="inline-block px-4 py-1 bg-emerald-500/50 backdrop-blur-md rounded-full text-sm font-semibold mb-6 border border-emerald-400/30">
                     Terakreditasi Paripurna
                   </span>
-                  <h1 className="text-5xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
+                  <h1 className="text-4xl md:text-6xl font-bold leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.5)' }}>
                     Pelayanan Kesehatan Terbaik
                   </h1>
                   <h2 
-                    className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                    className="text-4xl md:text-6xl font-bold leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
                     style={{ WebkitTextStroke: '1px rgba(52,211,153,0.5)' }}
                   >
                     Untuk Seluruh Lapisan Masyarakat
@@ -1140,8 +1158,8 @@ export default function App() {
 
               <div>
                 <h3 className="text-emerald-600 font-bold uppercase tracking-widest text-sm mb-4">Tentang Kami</h3>
-                <h2 className="text-4xl font-bold text-slate-900 mb-6 leading-tight">
-                  Sejarah 
+                <h2 className="text-3xl font-bold text-slate-900 mb-6 leading-tight">
+                  Sejarah                        
                   UOBK RSUD AL-MULK
                 </h2>
                 <p className="text-slate-600 mb-8 leading-relaxed text-lg">

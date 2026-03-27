@@ -84,6 +84,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeChartModal, setActiveChartModal] = useState<'bar' | 'pie' | 'line' | null>(null);
   const [loadingCharts, setLoadingCharts] = useState(false);
+  const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -110,7 +111,13 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
       setAppointments(data);
     };
     fetchData();
-    const interval = setInterval(fetchData, 3000);
+    const interval = setInterval(async () => {
+      try {
+        await fetchData();
+      } catch (err) {
+        console.error("Auto-refresh failed:", err);
+      }
+    }, 10000); // Increase to 10s for better stability
     return () => clearInterval(interval);
   }, []);
 
@@ -224,16 +231,30 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
   };
 
   const handleShowGrafik = async (type: 'bar' | 'pie' | 'line') => {
-    console.log("BUTTON CLICKED:", type);
+    console.log("handleShowGrafik called with type:", type);
+    setActiveChartModal(null); // Reset first to ensure re-mount
     setLoadingCharts(true);
     try {
       // Fetch fresh data
       const data = await getAppointmentsDB();
+      console.log("Fetched appointments for chart:", data.length);
+      
+      if (!data || data.length === 0) {
+        console.warn("No appointments data fetched for chart");
+      }
+      
       setAppointments(data);
-      console.log("DATA GRAFIK FETCHED:", data.length);
-      setActiveChartModal(type);
-    } catch (error) {
+      
+      // Force refresh by incrementing key
+      setChartRefreshKey(prev => prev + 1);
+      
+      // Small delay to ensure state updates are processed
+      setTimeout(() => {
+        setActiveChartModal(type);
+      }, 50);
+    } catch (error: any) {
       console.error("Error fetching chart data:", error);
+      alert(`Gagal memuat data grafik: ${error.message || 'Koneksi terputus'}`);
     } finally {
       setLoadingCharts(false);
     }
@@ -292,8 +313,8 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
   const pasienDilayani = appointments.filter((a: any) => a.tanggal_kunjungan?.split('T')[0] === todayStr && a.status_antrian === 'Sedang Dilayani').length;
   const activeQueue = pasienMenunggu + pasienDilayani;
 
-  // Chart Data: Kunjungan Per Poli
-  const poliCounts = filteredAppointments.reduce((acc: any, curr: any) => {
+  // Chart Data: Kunjungan Per Poli (Using all appointments for Monitoring)
+  const poliCounts = appointments.reduce((acc: any, curr: any) => {
     const poliName = curr.poli || 'Lainnya';
     acc[poliName] = (acc[poliName] || 0) + 1;
     return acc;
@@ -303,8 +324,8 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
     kunjungan: poliCounts[key]
   })).sort((a, b) => b.kunjungan - a.kunjungan);
 
-  // Chart Data: Pasien per Dokter
-  const doctorCounts = filteredAppointments.reduce((acc: any, curr: any) => {
+  // Chart Data: Pasien per Dokter (Using all appointments for Monitoring)
+  const doctorCounts = appointments.reduce((acc: any, curr: any) => {
     const docName = curr.dokter || 'Lainnya';
     acc[docName] = (acc[docName] || 0) + 1;
     return acc;
@@ -320,50 +341,45 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
   const top5Poli = [...poliChartData].slice(0, 5);
 
   // Chart Data: Tren Kunjungan
-  // Always show last 7 days if today or week is selected
+  // Show monthly trend for the current year
   const getTrendData = () => {
     const counts: any = {};
     const now = new Date();
+    const currentYear = now.getFullYear();
     
-    // Determine range
-    let startDate = new Date();
-    if (dateFilter === 'today' || dateFilter === 'week') {
-      startDate.setDate(now.getDate() - 6); // Last 7 days including today
-    } else if (dateFilter === 'month') {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    } else if (dateFilter === 'custom' && customDate) {
-      const d = new Date(customDate);
-      startDate = new Date(d);
-      startDate.setDate(d.getDate() - 6);
-    } else {
-      startDate.setDate(now.getDate() - 6);
-    }
-    startDate.setHours(0,0,0,0);
-
-    // Filter appointments for trend (might be broader than filteredAppointments)
+    // Filter appointments for the current year
     const relevantAppts = appointments.filter((a: any) => {
-      const apptDate = new Date(a.tanggal_kunjungan?.split('T')[0]);
-      return apptDate >= startDate && apptDate <= now;
+      if (!a.tanggal_kunjungan) return false;
+      try {
+        const apptDate = new Date(a.tanggal_kunjungan.split('T')[0]);
+        return apptDate.getFullYear() === currentYear;
+      } catch (e) {
+        return false;
+      }
     });
 
     relevantAppts.forEach((a: any) => {
-      const dateStr = a.tanggal_kunjungan?.split('T')[0];
-      counts[dateStr] = (counts[dateStr] || 0) + 1;
+      try {
+        const apptDate = new Date(a.tanggal_kunjungan.split('T')[0]);
+        const monthIdx = apptDate.getMonth(); // 0-11
+        counts[monthIdx] = (counts[monthIdx] || 0) + 1;
+      } catch (e) {
+        // Skip invalid dates
+      }
     });
 
-    const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     const result = [];
-    const iterDate = new Date(startDate);
     
-    while (iterDate <= now) {
-      const dateStr = iterDate.toISOString().split('T')[0];
+    // Show all 12 months of the current year
+    for (let i = 0; i < 12; i++) {
       result.push({
-        date: dateStr,
-        dayName: days[iterDate.getDay()],
-        kunjungan: counts[dateStr] || 0
+        month: i + 1,
+        dayName: monthNames[i], // Keep key name 'dayName' to avoid breaking XAxis config
+        kunjungan: counts[i] || 0
       });
-      iterDate.setDate(iterDate.getDate() + 1);
     }
+    
     return result;
   };
 
@@ -543,7 +559,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={activeChartModal}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={`bar-${chartRefreshKey}-${activeChartModal}`}>
                     <BarChart data={poliChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                       <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#64748b'}} interval={0} angle={-45} textAnchor="end" height={60} />
@@ -572,7 +588,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
                   </button>
                 </div>
                 <div className="h-64 md:h-72 w-full">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={activeChartModal}>
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={`pie-${chartRefreshKey}-${activeChartModal}`}>
                     <PieChart>
                       <Pie
                         data={doctorChartData}
@@ -608,7 +624,7 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
                 </button>
               </div>
               <div className="h-64 md:h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={activeChartModal}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} key={`line-${chartRefreshKey}-${activeChartModal}`}>
                   <LineChart data={trendChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                     <XAxis dataKey="dayName" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#64748b'}} />
@@ -840,36 +856,34 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
         ) : null}
       </main>
 
-      <ChartModal 
-        isOpen={activeChartModal === 'bar'} 
-        onClose={() => setActiveChartModal(null)} 
-        title="Grafik Kunjungan Per Poli" 
-        type="bar" 
-        data={poliChartData} 
-        dataKey="kunjungan" 
-        nameKey="name" 
-        totalInfo={`Total Kunjungan: ${poliChartData.reduce((acc, curr) => acc + curr.kunjungan, 0)}`}
-      />
-      <ChartModal 
-        isOpen={activeChartModal === 'pie'} 
-        onClose={() => setActiveChartModal(null)} 
-        title="Pasien per Dokter" 
-        type="pie" 
-        data={doctorChartData} 
-        dataKey="pasien" 
-        nameKey="name" 
-        totalInfo={`Total Pasien: ${doctorChartData.reduce((acc, curr) => acc + curr.pasien, 0)}`}
-      />
-      <ChartModal 
-        isOpen={activeChartModal === 'line'} 
-        onClose={() => setActiveChartModal(null)} 
-        title="Tren Kunjungan Pasien" 
-        type="line" 
-        data={trendChartData} 
-        dataKey="kunjungan" 
-        nameKey="dayName" 
-        totalInfo={`Total Kunjungan: ${trendChartData.reduce((acc, curr) => acc + curr.kunjungan, 0)}`}
-      />
+      <AnimatePresence mode="wait">
+        {activeChartModal && (
+          <ChartModal 
+            key={`${activeChartModal}-${chartRefreshKey}`}
+            isOpen={true} 
+            onClose={() => setActiveChartModal(null)} 
+            title={
+              activeChartModal === 'bar' ? "Grafik Kunjungan Per Poli" :
+              activeChartModal === 'pie' ? "Pasien per Dokter" :
+              "Tren Kunjungan Pasien"
+            }
+            type={activeChartModal} 
+            data={
+              activeChartModal === 'bar' ? poliChartData :
+              activeChartModal === 'pie' ? doctorChartData :
+              trendChartData
+            } 
+            dataKey={activeChartModal === 'pie' ? "pasien" : "kunjungan"} 
+            nameKey={activeChartModal === 'line' ? "dayName" : "name"} 
+            totalInfo={
+              activeChartModal === 'bar' ? `Total Kunjungan: ${poliChartData.reduce((acc, curr) => acc + curr.kunjungan, 0)}` :
+              activeChartModal === 'pie' ? `Total Pasien: ${doctorChartData.reduce((acc, curr) => acc + curr.pasien, 0)}` :
+              `Total Kunjungan: ${trendChartData.reduce((acc, curr) => acc + curr.kunjungan, 0)}`
+            }
+          />
+        )}
+      </AnimatePresence>
+
 
       {/* Patient Detail Modal */}
       <AnimatePresence>
@@ -2814,7 +2828,19 @@ function RekamMedisView() {
       ...medicalRecordForm,
       resep: [
         ...medicalRecordForm.resep,
-        { obat_id: '', nama_obat: '', satuan: '', dosis: '', frekuensi: '3x1', durasi: '3 Hari', cara_pakai: 'Sesudah Makan' }
+        { 
+          obat_id: '', 
+          nama_obat: '', 
+          satuan: '', 
+          dosis: '', 
+          dosis_jumlah: '', 
+          dosis_sediaan: 'Tablet', 
+          frekuensi: '3x1', 
+          durasi: '', 
+          durasi_jumlah: '', 
+          durasi_jenis: 'hari', 
+          cara_pakai: 'Sesudah Makan' 
+        }
       ]
     });
   };
@@ -2834,6 +2860,8 @@ function RekamMedisView() {
         newResep[index].satuan = '';
         newResep[index].stok = 0;
         newResep[index].dosis = '';
+        newResep[index].dosis_jumlah = '';
+        newResep[index].dosis_sediaan = 'Tablet';
       } else {
         // Check for duplicates
         const isDuplicate = newResep.some((r, i) => i !== index && r.obat_id === value.value && value.value !== 'custom');
@@ -2857,6 +2885,8 @@ function RekamMedisView() {
           newResep[index].satuan = 'pcs';
           newResep[index].stok = 100; // Default stock for custom
           newResep[index].dosis = '1 Tablet';
+          newResep[index].dosis_jumlah = '1';
+          newResep[index].dosis_sediaan = 'Tablet';
         } else {
           newResep[index].obat_id = value.value;
           newResep[index].nama_obat = value.obat.nama_obat;
@@ -2866,16 +2896,30 @@ function RekamMedisView() {
           // Auto-fill dosis based on category
           if (value.obat.kategori === 'Sirup') {
             newResep[index].dosis = '1 Sendok Takar (5ml)';
+            newResep[index].dosis_jumlah = '1';
+            newResep[index].dosis_sediaan = 'Sendok Takar';
           } else if (value.obat.kategori === 'Salep' || value.obat.kategori === 'Krim') {
             newResep[index].dosis = 'Oleskan tipis';
+            newResep[index].dosis_jumlah = '';
+            newResep[index].dosis_sediaan = 'Oleskan';
             newResep[index].cara_pakai = 'Dioleskan pada area sakit';
           } else {
             newResep[index].dosis = '1 Tablet';
+            newResep[index].dosis_jumlah = '1';
+            newResep[index].dosis_sediaan = 'Tablet';
           }
         }
       }
     } else {
       newResep[index][field] = value;
+      
+      // Update combined strings for backward compatibility and validation
+      if (field === 'dosis_jumlah' || field === 'dosis_sediaan') {
+        newResep[index].dosis = `${newResep[index].dosis_jumlah || ''} ${newResep[index].dosis_sediaan || ''}`.trim();
+      }
+      if (field === 'durasi_jumlah' || field === 'durasi_jenis') {
+        newResep[index].durasi = `${newResep[index].durasi_jumlah || ''} ${newResep[index].durasi_jenis || ''}`.trim();
+      }
     }
     setMedicalRecordForm({ ...medicalRecordForm, resep: newResep });
   };
@@ -2937,7 +2981,34 @@ function RekamMedisView() {
         saturasi: record.saturasi || '',
         diagnosa: parsedDiagnosa,
         tindakan: record.tindakan || 'Rawat Jalan',
-        resep: parsedResep
+        resep: parsedResep.map((r: any) => {
+          // Try to parse existing dosis if new fields are missing
+          let dj = r.dosis_jumlah;
+          let ds = r.dosis_sediaan;
+          if (r.dosis && (!dj || !ds)) {
+            const parts = r.dosis.split(' ');
+            dj = dj || parts[0] || '';
+            ds = ds || parts[1] || 'Tablet';
+          }
+
+          let drj = r.durasi_jumlah;
+          let drt = r.durasi_jenis;
+          if (r.durasi && (!drj || !drt)) {
+            const parts = r.durasi.split(' ');
+            drj = drj || parts[0] || '';
+            drt = drt || parts[1]?.toLowerCase() || 'hari';
+          }
+
+          return {
+            ...r,
+            dosis_jumlah: dj || '',
+            dosis_sediaan: ds || 'Tablet',
+            durasi_jumlah: drj || '',
+            durasi_jenis: drt || 'hari',
+            frekuensi: r.frekuensi || '3x1',
+            cara_pakai: r.cara_pakai || 'Sesudah Makan'
+          };
+        })
       });
     } catch (error) {
       console.error('Error fetching medical record:', error);
@@ -3458,13 +3529,29 @@ function RekamMedisView() {
                               
                               <div className="md:col-span-3 space-y-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dosis</label>
-                                <input 
-                                  type="text"
-                                  placeholder="Contoh: 500 mg"
-                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-                                  value={r.dosis}
-                                  onChange={(e) => handleUpdateResep(index, 'dosis', e.target.value)}
-                                />
+                                <div className="flex gap-2">
+                                  <input 
+                                    type="text"
+                                    placeholder="Jml"
+                                    className="w-16 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                    value={r.dosis_jumlah}
+                                    onChange={(e) => handleUpdateResep(index, 'dosis_jumlah', e.target.value)}
+                                  />
+                                  <select 
+                                    className="flex-1 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                    value={r.dosis_sediaan}
+                                    onChange={(e) => handleUpdateResep(index, 'dosis_sediaan', e.target.value)}
+                                  >
+                                    <option value="Tablet">Tablet</option>
+                                    <option value="Capsul">Capsul</option>
+                                    <option value="Racikan">Racikan</option>
+                                    <option value="Vial">Vial</option>
+                                    <option value="Ampul">Ampul</option>
+                                    <option value="Sendok Takar">Sendok Takar</option>
+                                    <option value="Oleskan">Oleskan</option>
+                                    <option value="Tetes">Tetes</option>
+                                  </select>
+                                </div>
                               </div>
 
                               <div className="md:col-span-3 space-y-1">
@@ -3474,23 +3561,34 @@ function RekamMedisView() {
                                   value={r.frekuensi}
                                   onChange={(e) => handleUpdateResep(index, 'frekuensi', e.target.value)}
                                 >
-                                  <option value="1x1">1x1 (Sehari 1 kali)</option>
-                                  <option value="2x1">2x1 (Sehari 2 kali)</option>
-                                  <option value="3x1">3x1 (Sehari 3 kali)</option>
-                                  <option value="4x1">4x1 (Sehari 4 kali)</option>
-                                  <option value="Bila Perlu">Bila Perlu</option>
+                                  <option value="1x1">1x1</option>
+                                  <option value="2x1">2x1</option>
+                                  <option value="3x1">3x1</option>
+                                  <option value="bila perlu">bila perlu</option>
+                                  <option value="custom frekuensi">custom frekuensi</option>
                                 </select>
                               </div>
 
                               <div className="md:col-span-3 space-y-1">
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Durasi</label>
-                                <input 
-                                  type="text"
-                                  placeholder="Contoh: 3 Hari"
-                                  className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-                                  value={r.durasi}
-                                  onChange={(e) => handleUpdateResep(index, 'durasi', e.target.value)}
-                                />
+                                <div className="flex gap-2">
+                                  <input 
+                                    type="text"
+                                    placeholder="Jml"
+                                    className="w-16 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                    value={r.durasi_jumlah}
+                                    onChange={(e) => handleUpdateResep(index, 'durasi_jumlah', e.target.value)}
+                                  />
+                                  <select 
+                                    className="flex-1 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
+                                    value={r.durasi_jenis}
+                                    onChange={(e) => handleUpdateResep(index, 'durasi_jenis', e.target.value)}
+                                  >
+                                    <option value="kali">kali</option>
+                                    <option value="hari">hari</option>
+                                    <option value="tahun">tahun</option>
+                                  </select>
+                                </div>
                               </div>
 
                               <div className="md:col-span-3 space-y-1">
@@ -3500,11 +3598,15 @@ function RekamMedisView() {
                                   value={r.cara_pakai}
                                   onChange={(e) => handleUpdateResep(index, 'cara_pakai', e.target.value)}
                                 >
-                                  <option value="Sesudah Makan">Sesudah Makan</option>
-                                  <option value="Sebelum Makan">Sebelum Makan</option>
-                                  <option value="Bersama Makan">Bersama Makan</option>
-                                  <option value="Dioleskan pada area sakit">Dioleskan</option>
-                                  <option value="Diteteskan">Diteteskan</option>
+                                  <option value="sebelum makan">sebelum makan</option>
+                                  <option value="sesudah makan">sesudah makan</option>
+                                  <option value="bersama makan">bersama makan</option>
+                                  <option value="dioleskan">dioleskan</option>
+                                  <option value="di teteskan">di teteskan</option>
+                                  <option value="injeksi IM">injeksi IM</option>
+                                  <option value="injeksi IV">injeksi IV</option>
+                                  <option value="injeksi IC">injeksi IC</option>
+                                  <option value="injeksi SC">injeksi SC</option>
                                 </select>
                               </div>
                             </div>
