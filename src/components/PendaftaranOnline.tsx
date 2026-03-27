@@ -243,11 +243,13 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
     utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
     
     // Pilih suara yang paling natural jika tersedia
-    const voices = window.speechSynthesis.getVoices();
-    const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
-                    voices.find(v => v.lang === 'id-ID');
-    if (idVoice) {
-      utterance.voice = idVoice;
+    if (window.speechSynthesis) {
+      const voices = window.speechSynthesis.getVoices();
+      const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                      voices.find(v => v.lang === 'id-ID');
+      if (idVoice) {
+        utterance.voice = idVoice;
+      }
     }
     
     utterance.onend = () => {
@@ -2077,14 +2079,16 @@ function CekAntrian({ appointments, allAppointments, onRefresh }: { appointments
         utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
         
         // Pilih suara yang paling natural jika tersedia
-        const voices = window.speechSynthesis.getVoices();
-        const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
-                        voices.find(v => v.lang === 'id-ID');
-        if (idVoice) {
-          utterance.voice = idVoice;
-        }
+        if (window.speechSynthesis) {
+          const voices = window.speechSynthesis.getVoices();
+          const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                          voices.find(v => v.lang === 'id-ID');
+          if (idVoice) {
+            utterance.voice = idVoice;
+          }
 
-        window.speechSynthesis.speak(utterance);
+          window.speechSynthesis.speak(utterance);
+        }
       }
     });
 
