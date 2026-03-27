@@ -152,8 +152,14 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
+
+    const channel = supabase.channel('realtime-appointments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, fetchData)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const handleNewBooking = async (booking: any) => {
@@ -224,7 +230,14 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
     };
 
     const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
-    const text = `Nomor antrian, ${nomorSpelled}, silakan menuju, ${item.poli}, dokter, ${item.dokter.replace('dr. ', '')}`;
+    
+    // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
+    let text = `Nomor Antrian, ${nomorSpelled}, `;
+    if (item.nama_pasien) {
+      text += `${item.nama_pasien}, `;
+    }
+    text += `Silakan Menuju, ${item.poli}.`;
+    
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
     utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
@@ -2051,7 +2064,14 @@ function CekAntrian({ appointments, allAppointments, onRefresh }: { appointments
         };
 
         const nomorSpelled = formatNomorAntrian(app.nomor_antrian);
-        const text = `Nomor antrian, ${nomorSpelled}, silakan menuju, ${app.poli}, dokter, ${app.dokter.replace('dr. ', 'dokter ')}`;
+        
+        // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
+        let text = `Nomor Antrian, ${nomorSpelled}, `;
+        if (app.nama_pasien) {
+          text += `${app.nama_pasien}, `;
+        }
+        text += `Silakan Menuju, ${app.poli}.`;
+        
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'id-ID';
         utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
