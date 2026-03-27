@@ -859,8 +859,8 @@ export default function App() {
                 <img src={assets.logo_main || "/logo-1.jpg"} alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
-                <h1 className="text-sm md:text-xl font-bold text-emerald-400 leading-tight whitespace-nowrap">UOBK RSUD AL-MULK</h1>
-                <p className="text-[7px] md:text-[10px] uppercase tracking-widest text-emerald-700 font-semibold whitespace-nowrap">Kota Sukabumi</p>
+                <h1 className="text-base md:text-2xl font-bold text-emerald-400 leading-tight whitespace-nowrap">UOBK RSUD AL-MULK</h1>
+                <p className="text-[12px] md:text-[16px] uppercase tracking-widest text-emerald-700 font-semibold whitespace-nowrap">Kota Sukabumi</p>
               </div>
             </div>
 
