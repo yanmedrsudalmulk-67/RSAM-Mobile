@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Lock, User, CreditCard, MapPin, Phone, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, CreditCard, MapPin, Phone, Eye, EyeOff, ArrowRight, CheckCircle2, Calendar } from 'lucide-react';
 import { FloatingInput } from './FloatingInput';
+import { DateMaskInput } from './DateMaskInput';
+import { formatUIDate, isValidDate, toDBDate } from '../lib/dateUtils';
 
 interface LoginProps {
   onLogin: (user: any) => void;
@@ -67,11 +69,22 @@ export default function Login({ onLogin, assets = {} }: LoginProps) {
     setError('');
     setSuccess('');
     
+    if (!isValidDate(registerForm.tanggal_lahir)) {
+      setError('Tanggal lahir tidak valid. Gunakan format DD/MM/YYYY yang benar.');
+      setLoading(false);
+      return;
+    }
+    
     try {
+      const payload = {
+        ...registerForm,
+        tanggal_lahir: toDBDate(registerForm.tanggal_lahir)
+      };
+
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(registerForm)
+        body: JSON.stringify(payload)
       });
       
       const data = await res.json();
@@ -332,15 +345,11 @@ export default function Login({ onLogin, assets = {} }: LoginProps) {
                       validationFn={(val) => val.length === 16}
                       errorMessage="NIK harus 16 digit"
                     />
-                    <FloatingInput
+                    <DateMaskInput
                       label="Tanggal Lahir *"
-                      type="date"
                       required
-                      max={new Date().toISOString().split('T')[0]}
                       value={registerForm.tanggal_lahir}
-                      onChange={e => setRegisterForm({...registerForm, tanggal_lahir: e.target.value})}
-                      onInvalid={e => (e.target as HTMLInputElement).setCustomValidity('Tanggal lahir wajib diisi')}
-                      onInput={e => (e.target as HTMLInputElement).setCustomValidity('')}
+                      onChange={val => setRegisterForm({...registerForm, tanggal_lahir: val})}
                     />
                   </div>
 

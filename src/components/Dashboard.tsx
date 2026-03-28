@@ -47,6 +47,7 @@ import { SosialMediaManagement } from './SosialMediaManagement';
 import { DokterManagement } from './DokterManagement';
 import ChartModal from './ChartModal';
 import { SiteAssetEditor } from './SiteAssetEditor';
+import { formatUIDate } from '../lib/dateUtils';
 import { 
   getAppointmentsDB, 
   updateAppointmentStatusDB,
@@ -162,13 +163,14 @@ export default function Dashboard({ onBack, assets, onAssetsUpdate }: { onBack: 
     };
 
     const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+    const poliText = item.poli.toLowerCase().includes('poli') ? item.poli : `Poli ${item.poli}`;
     
     // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
     let text = `Nomor Antrian, ${nomorSpelled}, `;
     if (item.nama_pasien) {
       text += `${item.nama_pasien}, `;
     }
-    text += `Silakan Menuju, ${item.poli}.`;
+    text += `Silakan Menuju, ${poliText}.`;
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
@@ -2831,13 +2833,14 @@ function MonitoringView() {
     };
 
     const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+    const poliText = item.poli.toLowerCase().includes('poli') ? item.poli : `Poli ${item.poli}`;
     
     // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
     let text = `Nomor Antrian, ${nomorSpelled}, `;
     if (item.nama_pasien) {
       text += `${item.nama_pasien}, `;
     }
-    text += `Silakan Menuju, ${item.poli}.`;
+    text += `Silakan Menuju, ${poliText}.`;
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
@@ -3581,7 +3584,7 @@ function RekamMedisView() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Tanggal Lahir</p>
-                      <p className="font-bold text-slate-900">{selectedPatient.tanggal_lahir}</p>
+                      <p className="font-bold text-slate-900">{formatUIDate(selectedPatient.tanggal_lahir || '')}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-slate-500 uppercase text-[10px] font-bold tracking-wider">Jenis Kelamin</p>

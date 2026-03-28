@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Mail, Phone, MapPin, CreditCard, Save, X, CheckCircle2, Camera, Calendar } from 'lucide-react';
+import { User, Mail, Phone, MapPin, CreditCard, Save, X, CheckCircle2, Camera, Calendar, AlertTriangle } from 'lucide-react';
 import { FloatingInput } from './FloatingInput';
+import { DateMaskInput } from './DateMaskInput';
 import { supabase } from '../lib/supabase';
+import { formatUIDate, isValidDate, toDBDate } from '../lib/dateUtils';
 
 interface ProfileProps {
   user: any;
@@ -11,7 +13,7 @@ interface ProfileProps {
 }
 
 export default function Profile({ user, onUpdate, onBack }: ProfileProps) {
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!user.tanggal_lahir);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -20,7 +22,7 @@ export default function Profile({ user, onUpdate, onBack }: ProfileProps) {
     id: user.id,
     nama_pasien: user.nama_pasien || '',
     nik: user.nik || '',
-    tanggal_lahir: user.tanggal_lahir || '',
+    tanggal_lahir: formatUIDate(user.tanggal_lahir || ''),
     alamat: user.alamat || '',
     no_hp: user.no_hp || '',
     email: user.email || '',
@@ -82,11 +84,22 @@ export default function Profile({ user, onUpdate, onBack }: ProfileProps) {
     setError('');
     setSuccess('');
     
+    if (!isValidDate(formData.tanggal_lahir)) {
+      setError('Tanggal lahir tidak valid. Gunakan format DD/MM/YYYY yang benar.');
+      setLoading(false);
+      return;
+    }
+    
     try {
+      const payload = {
+        ...formData,
+        tanggal_lahir: toDBDate(formData.tanggal_lahir)
+      };
+
       const res = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       
       const data = await res.json();
@@ -188,14 +201,19 @@ export default function Profile({ user, onUpdate, onBack }: ProfileProps) {
                     onChange={e => setFormData({...formData, nik: e.target.value.replace(/\D/g, '')})}
                   />
 
-                  <FloatingInput
+                  {!user.tanggal_lahir && (
+                    <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-xl flex items-start text-sm">
+                      <AlertTriangle className="mr-3 flex-shrink-0 mt-0.5" size={18} />
+                      <p>Silakan lengkapi tanggal lahir Anda untuk melanjutkan penggunaan layanan.</p>
+                    </div>
+                  )}
+
+                  <DateMaskInput
                     label="Tanggal Lahir"
-                    type="date"
                     required
                     disabled={!isEditing}
-                    icon={<Calendar size={18} />}
                     value={formData.tanggal_lahir}
-                    onChange={e => setFormData({...formData, tanggal_lahir: e.target.value})}
+                    onChange={val => setFormData({...formData, tanggal_lahir: val})}
                   />
 
                   <div>
@@ -313,7 +331,7 @@ export default function Profile({ user, onUpdate, onBack }: ProfileProps) {
                         id: user.id,
                         nama_pasien: user.nama_pasien || '',
                         nik: user.nik || '',
-                        tanggal_lahir: user.tanggal_lahir || '',
+                        tanggal_lahir: formatUIDate(user.tanggal_lahir || ''),
                         alamat: user.alamat || '',
                         no_hp: user.no_hp || '',
                         email: user.email || '',

@@ -20,6 +20,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { formatUIDate, isValidDate, toDBDate } from '../lib/dateUtils';
 
 interface PatientPortalProps {
   user: any;
@@ -59,7 +60,10 @@ export default function PatientPortal({ user, onLogout }: PatientPortalProps) {
 
         if (profileError) throw profileError;
         setPatientData(profile);
-        setProfileForm(profile);
+        setProfileForm({
+          ...profile,
+          tanggal_lahir: formatUIDate(profile.tanggal_lahir || '')
+        });
 
         // Fetch bookings
         const { data: bookingData, error: bookingError } = await supabase
@@ -150,12 +154,20 @@ export default function PatientPortal({ user, onLogout }: PatientPortalProps) {
   };
 
   const handleUpdateProfile = async () => {
+    if (!isValidDate(profileForm.tanggal_lahir)) {
+      alert('Tanggal lahir tidak valid. Gunakan format DD/MM/YYYY yang benar.');
+      return;
+    }
     setIsUpdatingProfile(true);
     try {
       const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...profileForm, id: user.id })
+        body: JSON.stringify({ 
+          ...profileForm, 
+          tanggal_lahir: toDBDate(profileForm.tanggal_lahir),
+          id: user.id 
+        })
       });
       
       if (!response.ok) throw new Error('Failed to update profile');
@@ -838,11 +850,16 @@ export default function PatientPortal({ user, onLogout }: PatientPortalProps) {
                         <div>
                           <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tanggal Lahir</label>
                           <input 
-                            type="date" 
+                            type="text" 
+                            inputMode="numeric"
+                            placeholder="DD/MM/YYYY"
                             value={profileForm.tanggal_lahir}
-                            onChange={(e) => setProfileForm({...profileForm, tanggal_lahir: e.target.value})}
-                            className="w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                            onChange={(e) => setProfileForm({...profileForm, tanggal_lahir: formatUIDate(e.target.value)})}
+                            className={`w-full bg-slate-50 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none ${!isValidDate(profileForm.tanggal_lahir) && profileForm.tanggal_lahir.length > 0 ? 'ring-2 ring-red-500' : ''}`}
                           />
+                          {!isValidDate(profileForm.tanggal_lahir) && profileForm.tanggal_lahir.length > 0 && (
+                            <p className="text-red-500 text-xs mt-1">Tanggal lahir tidak valid</p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">No. Telepon</label>
@@ -865,7 +882,7 @@ export default function PatientPortal({ user, onLogout }: PatientPortalProps) {
                     ) : (
                       <>
                         <ProfileItem icon={<CreditCard size={20} />} label="NIK" value={patientData?.nik} />
-                        <ProfileItem icon={<Calendar size={20} />} label="Tanggal Lahir" value={patientData?.tanggal_lahir} />
+                        <ProfileItem icon={<Calendar size={20} />} label="Tanggal Lahir" value={formatUIDate(patientData?.tanggal_lahir || '')} />
                         <ProfileItem icon={<Phone size={20} />} label="No. Telepon" value={patientData?.no_hp} />
                         <ProfileItem icon={<MapPin size={20} />} label="Alamat" value={patientData?.alamat} />
                       </>

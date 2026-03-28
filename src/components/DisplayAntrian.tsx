@@ -58,7 +58,14 @@ export default function DisplayAntrian() {
       };
 
       const nomorSpelled = formatNomorAntrian(appointment.nomor_antrian);
-      const text = `Nomor antrian, ${nomorSpelled}, silakan menuju, ${appointment.poli}, dokter, ${appointment.dokter}.`;
+      const poliText = appointment.poli.toLowerCase().includes('poli') ? appointment.poli : `Poli ${appointment.poli}`;
+      
+      let text = `Nomor Antrian, ${nomorSpelled}, `;
+      if (appointment.nama_pasien) {
+        text += `${appointment.nama_pasien}, `;
+      }
+      text += `Silakan Menuju, ${poliText}.`;
+      
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
       utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural

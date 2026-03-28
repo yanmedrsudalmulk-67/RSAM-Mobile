@@ -180,10 +180,9 @@ export const SERVICES: any[] = [
       jamOperasional: '24 Jam',
       jenisPelayanan: 'Penunjang Diagnostik',
       fasilitas: [
-        'Mesin X-Ray Digital',
+        'Alat Rontgen X-Ray',
         'USG 4 Dimensi',
         'Laboratorium Patologi Klinik',
-        'Sistem Informasi Laboratorium (LIS)'
       ],
       images: ['/ruang radiologi-2.jpg', '/fasilitas-3.jpg']
     }
@@ -201,7 +200,7 @@ export const SERVICES: any[] = [
       fasilitas: [
         'Apotek Rawat Jalan',
         'Apotek Rawat Inap',
-        'Ruang Konseling Obat',
+        'Konseling Obat online',
         'Penyimpanan Obat Standar'
       ],
       images: ['/apotek.jpg', '/apotek-2.jpg']
@@ -221,7 +220,7 @@ export const SERVICES: any[] = [
         'Ruang Vaksinasi Khusus',
         'Cold Chain Standard WHO',
         'Ruang Observasi KIPI',
-        'Penerbitan Buku Kuning (ICV)'
+        'Penerbitan Electronic International Certificate of Vaccination (E-ICV)'
       ],
       vaksinTersedia: [
         'Vaksin Meningitis',
@@ -231,7 +230,7 @@ export const SERVICES: any[] = [
       informasiTambahan: [
         'Pelayanan vaksin untuk perjalanan internasional',
         'Persyaratan vaksin umroh dan haji',
-        'Penerbitan International Certificate of Vaccination (ICV)'
+        'Penerbitan Electronic International Certificate of Vaccination (E-ICV))'
       ],
       images: ['/ruang-vaksinasi.jpg', '/ruang-vaksinasi-2.jpg', '/ruang-vaksinasi-3.jpg']
     }

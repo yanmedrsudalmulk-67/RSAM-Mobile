@@ -314,111 +314,11 @@ export default function Login({ onLogin, assets }: LoginProps) {
                         <div className="absolute inset-0 h-full w-full bg-white/20 scale-0 group-active:scale-100 rounded-[16px] transition-transform duration-300 origin-center opacity-0 group-active:opacity-100"></div>
                       </button>
 
-                      {activeTab === 'patient' && (
-                        <div className="pt-3 text-center">
-                          <div className="relative flex items-center py-2 mb-2">
-                            <div className="flex-grow border-t border-slate-200"></div>
-                            <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-semibold">ATAU</span>
-                            <div className="flex-grow border-t border-slate-200"></div>
-                          </div>
-                          <button 
-                            type="button" 
-                            onClick={() => setLoginMethod('phone')} 
-                            className="w-full py-3 rounded-[16px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Phone size={18} />
-                            Login dengan Nomor HP
-                          </button>
-                        </div>
-                      )}
-                    </motion.form>
-                  ) : loginMethod === 'phone' ? (
-                    <motion.form 
-                      key="phone-form"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      onSubmit={handleSendOTP} 
-                      className="space-y-4"
-                    >
-                      <FloatingInput
-                        label="Nomor HP"
-                        type="tel"
-                        required
-                        icon={<Phone size={20} />}
-                        value={phoneForm.phone}
-                        onChange={e => setPhoneForm({...phoneForm, phone: e.target.value.replace(/\D/g, '')})}
-                        validationFn={(val) => val.length >= 10}
-                        errorMessage="Nomor HP tidak valid"
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-3.5 rounded-[16px] font-bold shadow-md hover:shadow-lg transition-all relative overflow-hidden group disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-                      >
-                        <span className="relative z-10 flex items-center justify-center gap-2">
-                          {loading ? 'Mengirim...' : 'Kirim Kode OTP'}
-                          {!loading && <ArrowRight size={18} />}
-                        </span>
-                        <div className="absolute inset-0 h-full w-full bg-white/20 scale-0 group-active:scale-100 rounded-[16px] transition-transform duration-300 origin-center opacity-0 group-active:opacity-100"></div>
-                      </button>
-                      <div className="pt-4 text-center">
-                        <button 
-                          type="button" 
-                          onClick={() => setLoginMethod('email')} 
-                          className="text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors"
-                        >
-                          Kembali ke Login Email
-                        </button>
-                      </div>
-                    </motion.form>
-                  ) : loginMethod === 'otp' ? (
-                    <motion.form 
-                      key="otp-form"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      onSubmit={handleVerifyOTP} 
-                      className="space-y-4"
-                    >
-                      <div className="text-center mb-6">
-                        <p className="text-sm text-slate-600">Kode OTP telah dikirim ke <br/><span className="font-bold text-slate-900">{phoneForm.phone}</span></p>
-                      </div>
-                      <FloatingInput
-                        label="Kode OTP (6 Digit)"
-                        type="text"
-                        required
-                        maxLength={6}
-                        icon={<Lock size={20} />}
-                        value={phoneForm.otp}
-                        onChange={e => setPhoneForm({...phoneForm, otp: e.target.value.replace(/\D/g, '')})}
-                        className="text-center tracking-widest text-lg font-bold"
-                      />
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-white py-3.5 rounded-[16px] font-bold shadow-md hover:shadow-lg transition-all relative overflow-hidden group disabled:opacity-70 disabled:cursor-not-allowed mt-2"
-                      >
-                        <span className="relative z-10 flex items-center justify-center gap-2">
-                          {loading ? 'Memverifikasi...' : 'Verifikasi & Login'}
-                          {!loading && <CheckCircle2 size={18} />}
-                        </span>
-                        <div className="absolute inset-0 h-full w-full bg-white/20 scale-0 group-active:scale-100 rounded-[16px] transition-transform duration-300 origin-center opacity-0 group-active:opacity-100"></div>
-                      </button>
-                      <div className="pt-4 text-center">
-                        <button 
-                          type="button" 
-                          onClick={() => setLoginMethod('phone')} 
-                          className="text-sm font-semibold text-slate-500 hover:text-emerald-600 transition-colors"
-                        >
-                          Ganti Nomor HP
-                        </button>
-                      </div>
                     </motion.form>
                   ) : null}
                 </AnimatePresence>
 
-                {activeTab === 'patient' && loginMethod === 'email' && (
+                {activeTab === 'patient' && (
                   <div className="mt-6 text-center">
                     <p className="text-sm text-slate-500">
                       Belum memiliki akun?{' '}

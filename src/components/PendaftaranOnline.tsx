@@ -49,6 +49,7 @@ import {
 } from '../db';
 import { supabase } from '../lib/supabase';
 import { checkIsCuti } from '../utils/doctorUtils';
+import { formatUIDate, isValidDate, toDBDate } from '../lib/dateUtils';
 
 export const formatScheduleDisplay = (schedules: any[]) => {
   if (!schedules || schedules.length === 0) return [];
@@ -154,7 +155,7 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
     fetchData();
 
     const channel = supabase.channel('realtime-appointments')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'booking_kunjungan' }, fetchData)
       .subscribe();
 
     return () => {
@@ -203,64 +204,76 @@ export default function PendaftaranOnline({ onBack, user, onUpdateUser, initialT
   };
 
   const handlePanggilAntrian = (item: any) => {
-    if (callingId === item.id_booking) {
-      window.speechSynthesis.cancel();
-      setCallingId(null);
+    if (!('speechSynthesis' in window)) {
+      console.log('TTS tidak didukung di device ini');
+      if (item.status_antrian !== 'Sedang Dilayani') {
+        handleStatusChange(item, 'Sedang Dilayani');
+      }
       return;
     }
 
-    window.speechSynthesis.cancel();
-    
-    if (item.status_antrian !== 'Sedang Dilayani') {
-      handleStatusChange(item, 'Sedang Dilayani');
-    }
+    try {
+      if (callingId === item.id_booking) {
+        window.speechSynthesis.cancel();
+        setCallingId(null);
+        return;
+      }
 
-    setCallingId(item.id_booking);
+      window.speechSynthesis.cancel();
+      
+      if (item.status_antrian !== 'Sedang Dilayani') {
+        handleStatusChange(item, 'Sedang Dilayani');
+      }
 
-    // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
-    const formatNomorAntrian = (nomor: string) => {
-      if (!nomor) return '';
-      const digitMap: { [key: string]: string } = {
-        '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
-        '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+      setCallingId(item.id_booking);
+
+      // Format nomor antrian agar dibaca jelas (A001 -> A nol nol satu)
+      const formatNomorAntrian = (nomor: string) => {
+        if (!nomor) return '';
+        const digitMap: { [key: string]: string } = {
+          '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+          '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+        };
+        return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+          return digitMap[char] || char;
+        }).join(' ');
       };
-      return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
-        return digitMap[char] || char;
-      }).join(' ');
-    };
 
-    const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
-    
-    // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
-    let text = `Nomor Antrian, ${nomorSpelled}, `;
-    if (item.nama_pasien) {
-      text += `${item.nama_pasien}, `;
-    }
-    text += `Silakan Menuju, ${item.poli}.`;
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'id-ID';
-    utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
-    
-    // Pilih suara yang paling natural jika tersedia
-    if (window.speechSynthesis) {
+      const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+      const poliText = item.poli.toLowerCase().includes('poli') ? item.poli : `Poli ${item.poli}`;
+      
+      // Template Teks Dinamis dengan jeda natural (300-500ms via comma)
+      let text = `Nomor Antrian, ${nomorSpelled}, `;
+      if (item.nama_pasien) {
+        text += `${item.nama_pasien}, `;
+      }
+      text += `Silakan Menuju, ${poliText}.`;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.rate = 1.05; // Kecepatan normal/sedikit cepat agar natural
+      
+      // Pilih suara yang paling natural jika tersedia
       const voices = window.speechSynthesis.getVoices();
       const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
                       voices.find(v => v.lang === 'id-ID');
       if (idVoice) {
         utterance.voice = idVoice;
       }
-    }
-    
-    utterance.onend = () => {
-      setCallingId(null);
-    };
-    
-    utterance.onerror = () => {
-      setCallingId(null);
-    };
+      
+      utterance.onend = () => {
+        setCallingId(null);
+      };
+      
+      utterance.onerror = () => {
+        setCallingId(null);
+      };
 
-    window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error('TTS Error:', error);
+      setCallingId(null);
+    }
   };
 
   const handleDetailPasien = (item: any) => {
@@ -849,7 +862,7 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
     nik: user?.nik || '', 
     name: user?.nama_pasien || '', 
     phone: user?.no_hp || '', 
-    dob: user?.tanggal_lahir || '', 
+    dob: formatUIDate(user?.tanggal_lahir || ''), 
     gender: user?.jenis_kelamin || '', 
     address: user?.alamat || '', 
     jaminanKesehatan: user?.nomor_bpjs ? 'BPJS' : '',
@@ -865,7 +878,7 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
         nik: user.nik || prev.nik,
         name: user.nama_pasien || prev.name,
         phone: user.no_hp || prev.phone,
-        dob: user.tanggal_lahir || prev.dob,
+        dob: formatUIDate(user.tanggal_lahir || prev.dob),
         gender: user.jenis_kelamin || prev.gender,
         address: user.alamat || prev.address,
         jaminanKesehatan: user.nomor_bpjs ? 'BPJS' : prev.jaminanKesehatan,
@@ -958,6 +971,11 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
 
   const handleNext = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (step === 1 && !isValidDate(formData.dob)) {
+      setErrorMsg('Tanggal lahir tidak valid. Gunakan format DD/MM/YYYY yang benar.');
+      return;
+    }
+    setErrorMsg('');
     setStep(s => s + 1);
   };
 
@@ -998,7 +1016,7 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
         time: formData.timeSlot,
         nama_pasien: formData.name,
         nik: formData.nik,
-        tanggal_lahir: formData.dob,
+        tanggal_lahir: toDBDate(formData.dob),
         jenis_kelamin: formData.gender,
         nomor_hp: formData.phone,
         alamat: formData.address,
@@ -1270,10 +1288,14 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
             <div>
               <FloatingInput
                 label="Tanggal Lahir *"
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="DD/MM/YYYY"
                 required
                 value={formData.dob}
-                onChange={e => setFormData({...formData, dob: e.target.value})}
+                onChange={e => setFormData({...formData, dob: formatUIDate(e.target.value)})}
+                validationFn={(val) => isValidDate(val)}
+                errorMessage="Tanggal tidak valid"
               />
             </div>
             <div>
@@ -2117,6 +2139,52 @@ function CekAntrian({ appointments, allAppointments, onRefresh }: { appointments
     }
   };
 
+  const handlePlaySound = (item: any) => {
+    if (!('speechSynthesis' in window)) {
+      console.log('TTS tidak didukung di device ini');
+      return;
+    }
+    
+    try {
+      window.speechSynthesis.cancel();
+      
+      const formatNomorAntrian = (nomor: string) => {
+        if (!nomor) return '';
+        const digitMap: { [key: string]: string } = {
+          '0': 'nol', '1': 'satu', '2': 'dua', '3': 'tiga', '4': 'empat',
+          '5': 'lima', '6': 'enam', '7': 'tujuh', '8': 'delapan', '9': 'sembilan'
+        };
+        return nomor.replace(/[^a-zA-Z0-9]/g, '').split('').map(char => {
+          return digitMap[char] || char;
+        }).join(' ');
+      };
+
+      const nomorSpelled = formatNomorAntrian(item.nomor_antrian);
+      const poliText = item.poli.toLowerCase().includes('poli') ? item.poli : `Poli ${item.poli}`;
+      
+      let text = `Nomor Antrian, ${nomorSpelled}, `;
+      if (item.nama_pasien) {
+        text += `${item.nama_pasien}, `;
+      }
+      text += `Silakan Menuju, ${poliText}.`;
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'id-ID';
+      utterance.rate = 1.05;
+      
+      const voices = window.speechSynthesis.getVoices();
+      const idVoice = voices.find(v => v.lang === 'id-ID' && v.name.toLowerCase().includes('female')) || 
+                      voices.find(v => v.lang === 'id-ID');
+      if (idVoice) {
+        utterance.voice = idVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    } catch (error) {
+      console.error('Error playing TTS:', error);
+    }
+  };
+
   const currentlyServingAll = allAppointments.filter(a => a.status_antrian === 'Sedang Dilayani');
 
   return (
@@ -2199,7 +2267,18 @@ function CekAntrian({ appointments, allAppointments, onRefresh }: { appointments
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 pb-8 border-b border-slate-100">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Nomor Antrian Anda</p>
-                <h3 className="text-4xl md:text-5xl font-bold text-emerald-600 tracking-wider">{result.nomor_antrian}</h3>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-4xl md:text-5xl font-bold text-emerald-600 tracking-wider">{result.nomor_antrian}</h3>
+                  {result.status_antrian === 'Sedang Dilayani' && (
+                    <button 
+                      onClick={() => handlePlaySound(result)}
+                      className="p-3 bg-emerald-100 text-emerald-600 rounded-full hover:bg-emerald-200 transition-colors"
+                      title="Putar Suara Panggilan"
+                    >
+                      <Volume2 size={24} />
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="mt-4 md:mt-0 text-left md:text-right">
                 <p className="text-sm text-slate-500 mb-2">Status Saat Ini</p>
