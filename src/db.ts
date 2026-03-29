@@ -90,6 +90,14 @@ export const getObatDB = async () => {
   }
 };
 
+export const saveObatDB = async (data: any) => {
+  return await fetchWithErr('/api/obat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+};
+
 export const getVaccineStocksDB = async () => {
   try {
     return await fetchWithErr('/api/vaccine-stocks');

@@ -533,6 +533,30 @@ app.post('/api/upload', async (req, res) => {
     }
   });
 
+  app.post('/api/obat', async (req, res) => {
+    try {
+      const { nama_obat, kategori, satuan, stok } = req.body;
+      
+      const { data, error } = await supabase
+        .from('obat_master')
+        .insert([{
+          nama_obat,
+          kategori: kategori || 'Umum',
+          satuan: satuan || 'pcs',
+          stok: stok || 0,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      res.json(data);
+    } catch (error: any) {
+      console.error('Error saving obat:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get('/api/icd10', async (req, res) => {
     try {
       const { search = '', limit = 20 } = req.query;

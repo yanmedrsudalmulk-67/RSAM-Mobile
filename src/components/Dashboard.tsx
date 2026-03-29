@@ -55,6 +55,7 @@ import {
   getMedicalRecordDB,
   getDiagnosaDB,
   getObatDB,
+  saveObatDB,
   getVaccineStocksDB, 
   getEIcvStockDB, 
   saveVaccineStocksDB, 
@@ -3109,7 +3110,7 @@ function RekamMedisView() {
       
       return data.map((item: any) => ({
         value: item.id,
-        label: `${item.nama_obat} (${item.kategori}) - Stok: ${item.stok}`,
+        label: item.nama_obat,
         obat: item
       }));
     } catch (error) {
@@ -3362,8 +3363,28 @@ function RekamMedisView() {
 
     setIsSaving(true);
     try {
+      // Save new medicines first
+      const updatedResep = await Promise.all(medicalRecordForm.resep.map(async (item) => {
+        if (item.obat_id === 'custom') {
+          try {
+            const newObat = await saveObatDB({
+              nama_obat: item.nama_obat,
+              kategori: item.dosis_sediaan || 'Umum',
+              satuan: item.satuan || 'pcs',
+              stok: 100 // Default stock for new medicines
+            });
+            return { ...item, obat_id: newObat.id };
+          } catch (err) {
+            console.error('Error saving new obat:', err);
+            return item;
+          }
+        }
+        return item;
+      }));
+
       const finalData = {
         ...medicalRecordForm,
+        resep: updatedResep,
         id_pasien: selectedPatient.user_id || selectedPatient.nik,
         diagnosa: medicalRecordForm.diagnosa.map((d: any) => {
           const isNew = d.__isNew__ || d.id === 'custom' || !d.id;
@@ -3411,68 +3432,18 @@ function RekamMedisView() {
     app.id_booking?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const [showSeedConfirm, setShowSeedConfirm] = useState(false);
-  const [seedMessage, setSeedMessage] = useState('');
-
-  const handleSeedData = async () => {
-    setShowSeedConfirm(false);
-    setSeedMessage('Sedang memproses...');
-    try {
-      const res = await fetch('/api/seed-data', { method: 'POST' });
-      const data = await res.json();
-      if (res.ok) {
-        setSeedMessage(data.message);
-      } else {
-        setSeedMessage('Error: ' + data.error);
-      }
-    } catch (e: any) {
-      setSeedMessage('Error: ' + e.message);
-    }
-  };
-
   const dosisOptions = [
     { value: '1x1', label: '1x1' },
     { value: '2x1', label: '2x1' },
     { value: '3x1', label: '3x1' },
-    { value: 'Lainnya', label: 'Lainnya (Custom)' }
+    { value: 'Lainnya', label: 'Lainnya' }
   ];
 
   return (
     <div className="space-y-8">
-      {showSeedConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Konfirmasi</h3>
-            <p className="text-slate-600 mb-6">Apakah Anda yakin ingin menambahkan 500 data dummy obat dan diagnosa?</p>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setShowSeedConfirm(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Batal</button>
-              <button onClick={handleSeedData} className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors">Ya, Tambahkan</button>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {seedMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Informasi</h3>
-            <p className="text-slate-600 mb-6">{seedMessage}</p>
-            <div className="flex justify-end">
-              <button onClick={() => setSeedMessage('')} className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors">Tutup</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-[#1A1A1A]">Data Rekam Medis</h2>
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <button
-            onClick={() => setShowSeedConfirm(true)}
-            className="bg-emerald-100 text-emerald-700 px-4 py-2.5 rounded-full text-sm font-medium hover:bg-emerald-200 transition-colors whitespace-nowrap"
-          >
-            Generate 500 Data
-          </button>
           <div className="relative w-full md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
