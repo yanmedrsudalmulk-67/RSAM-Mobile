@@ -1180,6 +1180,8 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
   };
 
   const [existingAppointments, setExistingAppointments] = useState<any[]>([]);
+  const [showFullToast, setShowFullToast] = useState(false);
+  const MAX_BOOKING_PER_SLOT = 3;
 
   useEffect(() => {
     const fetchExisting = async () => {
@@ -1211,8 +1213,11 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
     const slots = [];
     let current = new Date(`2000-01-01T${schedule.jam_mulai}:00`);
     const end = new Date(`2000-01-01T${schedule.jam_selesai}:00`);
+    
+    // Batas daftar = jam selesai - 1 jam
+    const limit = new Date(end.getTime() - 60 * 60 * 1000);
 
-    while (current < end) {
+    while (current <= limit) {
       const timeString = current.toTimeString().slice(0, 5);
       slots.push(timeString);
       current.setMinutes(current.getMinutes() + 30);
@@ -1222,23 +1227,34 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
 
   const timeSlots = generateTimeSlots();
   const docWithSchedule = getSpecificScheduleForDate(formData.date);
-  const dailyQuota = docWithSchedule?.specific_schedule?.kuota_harian || 30;
-  const quotaPerSlot = Math.max(1, Math.floor(dailyQuota / (timeSlots.length || 1)));
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
       <AnimatePresence>
         {uploadSuccess && (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }} 
-            animate={{ opacity: 1, scale: 1 }} 
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-2xl shadow-2xl z-50 flex flex-col items-center"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white p-4 px-6 rounded-2xl shadow-2xl z-50 flex items-center space-x-3 border border-emerald-100"
           >
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 size={32} />
+            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+              <CheckCircle2 size={24} />
             </div>
-            <h3 className="text-lg font-bold text-slate-900">Dokumen berhasil diupload</h3>
+            <span className="font-bold text-slate-900">Dokumen berhasil diupload</span>
+          </motion.div>
+        )}
+        {showFullToast && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white p-4 px-6 rounded-2xl shadow-2xl z-50 flex items-center space-x-3 border border-red-100"
+          >
+            <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+              <AlertCircle size={24} />
+            </div>
+            <span className="font-bold text-slate-900">Jadwal sudah penuh</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1676,20 +1692,29 @@ function FormPendaftaran({ onBookingSuccess, poliklinikList, jadwalDokter, user,
               <div className="grid grid-cols-2 gap-3">
                 {timeSlots.map(time => {
                   const count = existingAppointments.filter(a => a.time === time).length;
-                  const isFull = count >= quotaPerSlot;
+                  const isFull = count >= MAX_BOOKING_PER_SLOT;
                   return (
-                    <button 
+                    <motion.button 
                       key={time} 
-                      onClick={() => !isFull && setFormData({...formData, timeSlot: time})} 
-                      disabled={isFull}
-                      className={`p-3 rounded-xl border text-sm font-semibold transition-all text-center ${
-                        isFull ? 'border-red-200 bg-red-50 text-red-400 cursor-not-allowed' :
+                      whileHover={!isFull ? { scale: 1.02 } : {}}
+                      whileTap={!isFull ? { scale: 0.98 } : {}}
+                      onClick={() => {
+                        if (isFull) {
+                          setShowFullToast(true);
+                          setTimeout(() => setShowFullToast(false), 3000);
+                        } else {
+                          setFormData({...formData, timeSlot: time});
+                        }
+                      }} 
+                      className={`p-3 rounded-xl border text-sm font-semibold transition-all text-center flex flex-col items-center justify-center min-h-[60px] ${
+                        isFull ? 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed' :
                         formData.timeSlot === time ? 'border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-500/20' : 
-                        'border-slate-200 bg-white hover:border-emerald-300 text-slate-600'
+                        'border-slate-200 bg-white hover:bg-green-50 text-slate-600'
                       }`}
                     >
-                      {isFull ? 'Slot sudah penuh' : `${time} (${quotaPerSlot - count} sisa)`}
-                    </button>
+                      <span>{time}</span>
+                      {isFull && <span className="text-[10px] mt-1">Sudah Penuh</span>}
+                    </motion.button>
                   );
                 })}
                 {timeSlots.length === 0 && (
